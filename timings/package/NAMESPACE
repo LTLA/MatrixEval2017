@@ -1,0 +1,8 @@
+useDynLib(beachtime, .registration=TRUE, .fixes="cxx_")
+
+importFrom(Rcpp, sourceCpp)
+
+export(BeachmatRowSum, BeachmatColSum,
+    DefaultRowSum, DefaultColSum,
+    RandomColSum, RandomRowSum)
+
