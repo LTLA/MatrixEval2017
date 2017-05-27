@@ -16,11 +16,11 @@ DefaultColSum <- function(M) {
     .Call(cxx_get_numeric_default_margins, M, 1L)
 }
 
-RandomColSum <- function(M, o) {
+RandomRowSum <- function(M, o) {
     .Call(cxx_get_numeric_random_margins, M, 2L, o-1L)
 }
 
-RandomRowSum <- function(M, o) {
+RandomColSum <- function(M, o) {
     .Call(cxx_get_numeric_random_margins, M, 1L, o-1L)
 }
 
