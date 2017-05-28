@@ -8,3 +8,9 @@ timeExprs <- function(..., times=10) {
     }
     return(mean(output)*1e3) # Get to milliseconds
 }
+
+writeToFile <- function(..., timings, file, overwrite) {
+    write.table(data.frame(..., Time=mean(timings), SE=se(timings)), file=file, 
+                append=!overwrite, col.names=overwrite, sep="\t", quote=FALSE, row.names=FALSE)
+    return(invisible(NULL))
+}

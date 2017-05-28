@@ -2,10 +2,12 @@ useDynLib(beachtime, .registration=TRUE, .fixes="cxx_")
 
 importFrom(Rcpp, sourceCpp)
 
+importFrom(utils, write.table)
+
 export(BeachmatRowSum, BeachmatColSum,
     DefaultRowSum, DefaultColSum,
     RandomRowSum, RandomColSum,
     SimpleRowSum,
     ArmaRowSum, ArmaColSum,
-    se, timeExprs)
+    se, timeExprs, writeToFile)
 
