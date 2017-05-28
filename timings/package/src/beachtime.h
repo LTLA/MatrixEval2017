@@ -16,6 +16,10 @@ SEXP get_numeric_arma_margins(SEXP, SEXP);
 
 SEXP get_numeric_simple_margins(SEXP);
 
+SEXP edit_numeric_matrix(SEXP);
+
+SEXP edit_numeric_arma_matrix(SEXP);
+
 }
 
 #endif

@@ -26,9 +26,8 @@ SEXP get_numeric_random_margins (SEXP in, SEXP mode, SEXP order) {
 
 /* Other access functions */
 
-SEXP get_numeric_arma_margins (SEXP M, SEXP mode) {
-    BEGIN_RCPP
-    
+arma::sp_mat create_sparse_arma(SEXP M) {
+    // Code taken from http://gallery.rcpp.org/articles/armadillo-sparse-matrix/.
     Rcpp::S4 mat(M);
     Rcpp::IntegerVector dims = mat.slot("Dim");
     arma::urowvec i = Rcpp::as<arma::urowvec>(mat.slot("i"));
@@ -55,6 +54,13 @@ SEXP get_numeric_arma_margins (SEXP M, SEXP mode) {
     
     // set the number of non-zero elements
     arma::access::rw(res.n_nonzero) = x.size();
+
+    return(res);
+}
+
+SEXP get_numeric_arma_margins (SEXP M, SEXP mode) {
+    BEGIN_RCPP
+    auto res=create_sparse_arma(M);
 
     // Getting row or column sums.
     Rcpp::IntegerVector stuff(mode);
@@ -107,3 +113,31 @@ SEXP get_numeric_simple_margins (SEXP in) {
     return output;
     END_RCPP
 }
+
+/* Editing functions, to check what's actually going on. */
+
+SEXP edit_numeric_matrix(SEXP in) {
+    Rcpp::NumericMatrix mat(in);
+    if (mat.nrow()<2 || mat.ncol()<2) {
+        throw std::runtime_error("must be at least a 2x2 matrix");
+    }
+    auto mrow=mat.row(0);
+    mrow[0]=123456;
+    auto mcol=mat.column(1);
+    mcol[1]=987654;
+    return mat;
+}
+
+SEXP edit_numeric_arma_matrix(SEXP M) {
+    auto res=create_sparse_arma(M);
+    if (res.n_rows<2 || res.n_cols<2) {
+        throw std::runtime_error("must be at least a 2x2 matrix");
+    }
+    auto c=res.col(0);
+    c[0]=123456;
+    auto r=res.col(1);
+    r[1]=987654;
+    res.print();
+    return Rf_ScalarLogical(1);     
+}
+
