@@ -11,4 +11,4 @@ Description: For timing beachmat functions.
 License: GPL-3
 NeedsCompilation: yes
 SystemRequirements: C++11
-LinkingTo: Rcpp, beachmat, Rhdf5lib
+LinkingTo: Rcpp, beachmat, Rhdf5lib, RcppArmadillo

@@ -10,7 +10,8 @@ static const R_CallMethodDef all_call_entries[] = {
     REGISTER(get_numeric_margins, 2),
     REGISTER(get_numeric_default_margins, 2),
     REGISTER(get_numeric_random_margins, 3),
-//    REGISTER(get_simple_margins, 1),
+    REGISTER(get_numeric_arma_margins, 2),
+    REGISTER(get_numeric_simple_margins, 1),
     {NULL, NULL, 0}
 };
 

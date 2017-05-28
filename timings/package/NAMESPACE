@@ -4,6 +4,8 @@ importFrom(Rcpp, sourceCpp)
 
 export(BeachmatRowSum, BeachmatColSum,
     DefaultRowSum, DefaultColSum,
-    RandomColSum, RandomRowSum,
+    RandomRowSum, RandomColSum,
+    SimpleRowSum,
+    ArmaRowSum, ArmaColSum,
     se, timeExprs)
 

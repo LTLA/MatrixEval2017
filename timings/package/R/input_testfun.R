@@ -24,6 +24,14 @@ RandomColSum <- function(M, o) {
     .Call(cxx_get_numeric_random_margins, M, 1L, o-1L)
 }
 
-#SimpleRowSum <- function(M) {
-#    .Call(cxx_get_simple_margins, M)
-#}
+SimpleRowSum <- function(M) {
+    .Call(cxx_get_numeric_simple_margins, M)
+}
+
+ArmaRowSum <- function(M) {
+    .Call(cxx_get_numeric_arma_margins, M, 2L)
+}
+
+ArmaColSum <- function(M) {
+    .Call(cxx_get_numeric_arma_margins, M, 1L)
+}
