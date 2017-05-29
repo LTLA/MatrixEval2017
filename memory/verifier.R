@@ -19,11 +19,11 @@ for (ngenes in c(1000, 2000, 5000, 10000)) {
 
         for (density in c(0.01, 0.05, 0.1, 0.2, 0.5)) {
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
-            write.table(data.frame(Ngenes=ngenes, Ncells=ncells, Size=as.numeric(object.size(sparse.counts))/1e3),
+            write.table(data.frame(Ngenes=ngenes, Ncells=ncells, Density=density, Size=as.numeric(object.size(sparse.counts))/1e3),
                         file="memory_sparse.txt", append=!overwrite, col.names=overwrite, sep="\t", quote=FALSE, row.names=FALSE)
+            overwrite <- FALSE 
         }
 
-        overwrite <- FALSE 
         gc()
     }
 }
