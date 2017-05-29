@@ -1,0 +1,164 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=0.85in,left=2.75in,footskip=0.75in,marginparwidth=2in]{geometry}
+
+% use Unicode characters - try changing the option if you run into troubles with special characters (e.g. umlauts)
+\usepackage[utf8]{inputenc}
+
+% clean citations
+\usepackage{cite}
+
+% hyperref makes references clicky. use \url{www.example.com} or \href{www.example.com}{description} to add a clicky url
+\usepackage{nameref,hyperref}
+
+% line numbers
+\usepackage[right]{lineno}
+
+% improves typesetting in LaTeX
+\usepackage{microtype}
+\DisableLigatures[f]{encoding = *, family = * }
+
+% text layout - change as needed
+\raggedright
+\setlength{\parindent}{0.5cm}
+\textwidth 5.25in 
+\textheight 8.75in
+
+% Remove % for double line spacing
+%\usepackage{setspace} 
+%\doublespacing
+
+% use adjustwidth environment to exceed text width (see examples in text)
+\usepackage{changepage}
+
+% adjust caption style
+\usepackage[aboveskip=1pt,labelfont=bf,labelsep=period,singlelinecheck=off]{caption}
+
+% remove brackets from references
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad#1.}
+\makeatother
+
+% headrule, footrule and page numbers
+\usepackage{lastpage,fancyhdr,graphicx}
+\usepackage{epstopdf}
+\pagestyle{myheadings}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage/\pageref{LastPage}}
+\renewcommand{\footrule}{\hrule height 2pt \vspace{2mm}}
+\fancyheadoffset[L]{2.25in}
+\fancyfootoffset[L]{2.25in}
+
+% use \textcolor{color}{text} for colored text (e.g. highlight to-do areas)
+\usepackage{color}
+
+% define custom colors (this one is for figure captions)
+\definecolor{Gray}{gray}{.25}
+
+% this is required to include graphics
+\usepackage{graphicx}
+
+% use if you want to put caption to the side of the figure - see example in text
+\usepackage{sidecap}
+
+% use for have text wrap around figures
+\usepackage{wrapfig}
+\usepackage[pscoord]{eso-pic}
+\usepackage[fulladjust]{marginnote}
+\reversemarginpar
+
+% Adding multirow.
+\usepackage{multirow}
+
+% Other required things:
+\usepackage{textgreek}
+\usepackage{color}
+
+\newcommand{\suppfignorm}{1}
+\newcommand{\suppfigtotals}{2}
+\newcommand{\suppfigorder}{3}
+\newcommand{\suppfigbiophys}{4}
+\newcommand{\suppfignoise}{5}
+
+\newcommand{\suppsecmath}{1}
+\newcommand{\suppsecnoise}{2}
+\newcommand{\suppsecsim}{3}
+
+\newcommand{\supptabstats}{1}
+
+% document begins here
+\begin{document}
+\vspace*{0.35in}
+
+% title goes here:
+\begin{flushleft}
+{\Large
+    \textbf\newline{beachmat: a C++ API for data access from R matrix types}
+}
+\newline
+
+% authors go here:
+%\\
+Aaron T. L. Lun\textsuperscript{1,*}
+and friends
+\\
+\bigskip
+\bf{1} Cancer Research UK Cambridge Institute, University of Cambridge, Li Ka Shing Centre, Robinson Way, Cambridge CB2 0RE, United Kingdom
+\\
+\bigskip
+* aaron.lun@cruk.cam.ac.uk
+
+\end{flushleft}
+
+\section*{Abstract}
+Blha blah blah
+
+% now start line numbers
+\linenumbers
+
+\section*{Introduction}
+Recent advances in single-cell RNA sequencing (scRNA-seq) technologies have led to an explosion in the quantity of data that can be generated in routine experiments.
+Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow expression profiles to be captured for each of thousands to millions of cells.
+It hardly needs to be said that this is a substantial amount of data -- the expression profile for each cell consists of a measure of expression for each transcriptionally active genomic feature, of which there are usually 10,000 to 40,000 in most common model organisms.
+Careful computational analysis is critical to extract meaningful biology from these data, but the sheer volume strains existing pipelines and methods designed for single-cell data processing.
+The challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
+Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
+This results in even more data compared to gene-level expression values.
+
+It is no exaggeration to say that the R programming language \cite{R} is the premier tool of choice for statistical data analysis.
+R provides well-designed, rigorously-tested implementations of a large variety of statistical methods.
+Its interactive nature makes it easy for newcomers to learn and lends itself to data exploration and research, while its programming features allow more experienced users to readily assemble complex analyses.
+It is also extensible through the installation of optional packages, often contributed by the research community, which provide implementations of bespoke methods targeted to solve specific scientific problems.
+In particular, the Bioconductor project \cite{gentleman2004bioconductor} supports a number of packages for biological data analyis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
+Packages are usually written in R but can also include compiled code (e.g., in C/C++ or Fortran), which is beneficial for computationally intensive tasks where high performance is required.
+For C++ code, this process is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
+
+In its simplest form, a scRNA-seq data set consists of a count matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
+This can be most directly represented in R as a simple matrix, where each entry is explicitly stored in memory.
+Alternatively, it can be stored as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
+This exploits the fact that scRNA-seq protocols have low capture efficiencies \cite{grun2015design} -- RNA molecules are present in cells but are not reverse-transcribed to cDNA for sequencing, resulting in a preponderance of zeroes in the final count matrix.
+Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are extracted into memory upon request.
+In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that code written by users (or other developers) can be agnostic to the exact representation of the matrix.
+This simplifies the development process and improves interoperability.
+
+Unfortunately, for compiled code written in statically typed languages like C++, the details of the matrix implementation must be known during compilation.
+This makes it difficult to write a single, general piece of code that can be applied to many different matrix classes.
+Writing multiple versions for each class is difficult and unsustainable when more classes become available.
+The alternative is to perform all processing in R to exploit the availability of common methods across classes.
+However, this is an unappealing option for high-performance code.
+For scRNA-seq data stored in matrices, consider the most common access pattern, i.e., looping across all cells or genes and performing operations on the cell- or gene-specific expression profiles.
+If this was performed in R, the code within the loop would need to be re-interpreted at each of thousands or millions of iterations.
+This increases the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
+It would clearly be preferable to implement critical functions, loops and all, in compiled code wherever possible.
+
+% One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
+% However, this involves some costs on its own, e.g., memory allocations that were previously one-offs need to be re-performed.
+% If you need to share data across iterations, it will also involve more function calls to store relevant variables, so the cost of function calls is not avoided.
+
+{\small
+    \bibliography{ref}
+    \bibliographystyle{abbrv}
+}
+
+
+\end{document}
