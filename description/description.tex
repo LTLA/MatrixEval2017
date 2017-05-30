@@ -256,7 +256,7 @@ In contrast, obtaining the next element in a row of a dense matrix can be done i
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
 If row $r$ is accessed, \beachmat{} will loop over all columns and cache the index the first value of $x$ in $G_y$ that is not less than $r$.
 When $r+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
-This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserowrand}a, b).
+This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}a, b).
 Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search; if less, we use the indices to set the end of the search. 
 This reduces the search space and the amount of computational work for large $N_r$.
@@ -278,11 +278,10 @@ This reduces the search space and the amount of computational work for large $N_
         \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Row access times for CSC matrices using \beachmat{}, using consecutive or randomly selected rows (a, b) or in comparison to an equivalent simple matrix with \beachmat{} (c, d).
+    \caption{Row access times for CSC matrices with \beachmat{}, using a naive binary search or the improved caching method (a, b); and in comparison to an equivalent simple matrix (dense) (c, d).
         (a,c) Access times with respect to increasing density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
         (b, d) Access times with respect to increasing number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
-        Timings were computed after taking the row sums.
-        Note that consecutive row access was used in (c) and (d) for both sparse and simple (dense) matrices.
+        Timings are shown in milliseconds and were computed after taking the row sums. 
     }
     \label{fig:sparserow}
 \end{figure}

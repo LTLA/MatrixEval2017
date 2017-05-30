@@ -78,16 +78,16 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
         row.time <- def.time <- numeric(10)
         for (it in seq_len(10)) { 
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
-            o <- sample(ngenes, ngenes)
+            o <- sample(ngenes, ngenes) # Randomizing to force binary searches at each look-up.
             i <- seq_len(ngenes)
             row.time[it] <- timeExprs(RandomRowSum(sparse.counts, o, times=1)) # too slow.
             def.time[it] <- timeExprs(RandomRowSum(sparse.counts, i))
         }
 
-        writeToFile(Type="random", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="naive", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=row.time, file="timings_sparse_row_rand.txt", overwrite=overwrite)
         overwrite <- FALSE 
-        writeToFile(Type="consecutive", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="improved", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_row_rand.txt", overwrite=overwrite)
     }
 }
