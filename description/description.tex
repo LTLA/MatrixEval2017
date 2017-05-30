@@ -181,7 +181,7 @@ We compare the access speed of the \beachmat{} API to that of a reference implem
 Both row and column access via \beachmat{} require 20-50\% more time compared to the reference (Figure XXX).
 This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former cannot be faster than the latter.
 Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector}.
-In contrast, the reference simply iterates across the original data, avoiding the overhead of creating a new copy.
+In contrast, the reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
 Our use of copying is deliberate as it simplifies the API and keeps it consistent across matrix representations. 
 Iterating across the original data is complicated for sparse matrices (due to lack of memory locality) and impractical for file-based representations.
 Moreover, copying is required anyway for complex operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
@@ -190,21 +190,21 @@ This suggests that, in practice, \beachmat{}'s computational overhead can be ign
 \subsection*{Sparse matrices}
 The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format.
 Consider that every non-zero entry in this matrix is characterized by a triplet: row $x$, column $y$ and value $v$.
-In the CSC format, non-zero entries are sorted in order of increasing $x + N_ry$.
-This means that all entries from the same column are now grouped together.
+To convert this into the CSC format, entries are sorted in order of increasing $x + N_ry$.
+All entries with the same value of $y$ are now grouped together in the ordered sequence.
 We refer to each column-based group as $G_y$, the entries of which are sorted internally in order of increasing $x$.
-The reordered sequence of entries is further compressed by discarding $y$ from each triplet.
-All entries from the same column are at consecutive locations of the sequence, so only the start position of $G_y$ on the sequence needs to be stored for each column.
+The representation is further compressed by discarding $y$ from each triplet.
+All entries from the same column are at consecutive locations of the ordered sequence, so only the start position of $G_y$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
 This reduces memory usage to $s_IN_c + (s_I + s_v) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_v$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
 For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their simpler ``dense'' counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
-The CSC format simplifies data access by enforcing structure on the non-zero entries.
-When accessing a particular column, all corresponding entries in $G_y$ can be quickly extracted by taking the relevant part of the ordered sequence.
+The CSC format simplifies data access by imposing structure on the non-zero entries.
+When accessing a particular column $c$, all corresponding entries in $G_c$ can be quickly extracted by taking the relevant part of the ordered sequence.
 For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Figure XX).
-This is because only a few non-zero entries need to be copied, while the rest of the \code{Vector} can be rapidly filled with zeroes.
+This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
 As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
 We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also handles sparse matrices via the \code{SpMat} class.
 This provides faster column-level access than the \beachmat{} API as no copying of data is performed -- see above for a related discussion with simple matrices.
@@ -224,7 +224,7 @@ Despite these optimisations, consecutive row access with sparse matrices in \bea
 This is not surprising as there is simply less work to do with dense matrices.
 However, both are substantially faster than row access with \textit{RcppArmadillo}.
 For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
-These results justify the use of \beachmat{} for data access.
+These results motivate the use of \beachmat{} for data access.
 
 {\small
     \bibliography{ref}
