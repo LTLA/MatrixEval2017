@@ -1,0 +1,92 @@
+# This makes pretty plots of all timing sets.
+
+plotter <- function(data, wrt, col, lty, pch, loc="topleft", ...) {
+    yranges <- range(data$Time)
+    xranges <- range(data[,wrt])
+    by.method <- split(data[,c(wrt, "Time")], data$Type, drop=TRUE)
+    par(mar=c(5.1, 5.1, 4.1, 2.1))
+    plot(1,1,type="n", xlim=xranges, ylim=yranges, log="xy", ylab="Time (ms)", cex.axis=1.2, cex.lab=1.4, ..., cex.main=1.4)
+
+    if (missing(col)) { col <- rep("black", length(by.method)) }
+    if (missing(lty)) { lty <- rep(1, length(by.method)) }
+    if (missing(pch)) { pch <- rep(16, length(by.method)) }
+
+    for (i in seq_along(by.method)) {
+        current <- by.method[[i]]
+        points(current[,wrt], current$Time, col=col[i], pch=pch[i], cex=1.4)
+        lines(current[,wrt], current$Time, col=col[i], lwd=2, lty=lty[i])
+    }   
+    if (!is.na(loc)) {
+        legend(loc, col=col, lty=lty, legend=names(by.method), pch=pch, lwd=2, cex=1.2)
+    }
+    return(invisible(NULL))
+}
+
+##############################
+# Base plots.
+
+incoming <- read.table("../timings_base_col.txt", header=TRUE)
+incoming$Ncells <- incoming$Ncells/1e3
+pdf("base_col.pdf")
+plotter(incoming, "Ncells", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of columns ("*10^3*")"), main="Column access times")
+dev.off()
+
+incoming <- read.table("../timings_base_row.txt", header=TRUE)
+incoming$Ngenes <- incoming$Ngenes/1e3
+pdf("base_row.pdf")
+plotter(incoming, "Ngenes", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), main="Row access times", loc=NA)
+dev.off()
+
+##############################
+# Sparse plots.
+
+incoming <- read.table("../timings_sparse_col.txt", header=TRUE)
+incoming$Ncells <- incoming$Ncells/1e3
+incoming$Density <- incoming$Density * 100
+
+pdf("sparse_col_density.pdf")
+subincoming <- incoming[incoming$Ncells==1,]
+plotter(subincoming, "Density", c("grey70", "black", "red"), pch=c(18, 16, 17), xlab="Density (%)", loc="bottomright")
+dev.off()
+
+pdf("sparse_col_ncol.pdf")
+subincoming <- incoming[incoming$Density==1,]
+plotter(subincoming, "Ncells", c("grey70", "black", "red"), pch=c(18, 16, 17), xlab=expression("Number of columns ("*10^3*")"), loc=NA)
+dev.off()
+
+# By row.
+
+incoming <- read.table("../timings_sparse_row.txt", header=TRUE)
+incoming$Ngenes <- incoming$Ngenes/1e3
+incoming$Density <- incoming$Density * 100
+incoming <- incoming[incoming$Type!="arma",]
+
+pdf("sparse_row_density.pdf")
+subincoming <- incoming[incoming$Ngenes==10,]
+plotter(subincoming, "Density", c("black", "red"), pch=c(16, 17), xlab="Density (%)")
+dev.off()
+
+pdf("sparse_row_nrow.pdf")
+subincoming <- incoming[incoming$Density==1,]
+plotter(subincoming, "Ngenes", c("black", "red"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+dev.off()
+
+# By access pattern.
+
+incoming <- read.table("../timings_sparse_row_rand.txt", header=TRUE)
+incoming$Ngenes <- incoming$Ngenes/1e3
+incoming$Density <- incoming$Density * 100
+
+pdf("sparse_row_rand_density.pdf")
+subincoming <- incoming[incoming$Ngenes==10,]
+plotter(subincoming, "Density", c("red", "blue"), pch=c(17, 15), lty=c(2, 2), xlab="Density (%)")
+dev.off()
+
+pdf("sparse_row_rand_nrow.pdf")
+subincoming <- incoming[incoming$Density==1,]
+plotter(subincoming, "Ngenes", c("red", "blue"), pch=c(17, 15), lty=c(2,2), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+dev.off()
+
+##############################
+
+
