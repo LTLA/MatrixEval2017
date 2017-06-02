@@ -18,43 +18,23 @@ rechunk <- function(incoming, outname, byrow=TRUE) {
 
 ngenes <- 10000    
 overwrite <- TRUE
-limit <- 500 
-for (ncells in c(100, 200, 500, 1000, 2000, 5000, 10000)) {
+for (ncells in c(1000, 2000, 5000, 10000)) {
+    fpath <- file.path(tmp.dir, "colcomp.h5")
 
-    col.chunk.time <- col.rechunk.time <- col.xchunk.time <- col.contig.time <- def.time <- numeric(10)
+    hdf5.time <- def.time <- numeric(10)
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.contig <- writeHDF5Array(dense.counts, file.path(tmp.dir, "contig.h5"), level=0)
-        out.bycol <- writeHDF5Array(dense.counts, file.path(tmp.dir, "colcomp.h5"), chunk_dim=c(5000, 1), level=6)
-
-        col.contig.time[it] <- timeExprs(BeachmatColSum(out.contig), times=1)
-        col.chunk.time[it] <- timeExprs(BeachmatColSum(out.bycol), times=1)
+        out.col <- writeHDF5Array(dense.counts, fpath, name="yay", chunk_dim=c(5000, 1), level=6)
+        hdf5.time[it] <- timeExprs(BeachmatColSum(out.col), times=1)
         def.time[it] <- timeExprs(BeachmatColSum(dense.counts))
-
-        if (ncells <= limit) { # Takes too long for a large number of cells, so skipping if that's the case.
-            out.byrow <- writeHDF5Array(dense.counts, file.path(tmp.dir, "colrow.h5"), chunk_dim=c(1, min(ncells, 1000)), level=6)
-            col.rechunk.time[it] <- timeExprs({
-                out.col2 <- rechunk(out.byrow, file.path(tmp.dir, "colcomp2.h5"), byrow=FALSE)
-                BeachmatColSum(out.col2)
-            }, times=1)
-            col.xchunk.time[it] <- timeExprs(BeachmatColSum(out.byrow), times=1)
-        }
+        unlink(fpath)
     }
 
-    writeToFile(Type="HDF5 (contiguous)", Ngenes=ngenes, Ncells=ncells,
-                timings=col.contig.time, file="timings_hdf5_col.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5Array", Ngenes=ngenes, Ncells=ncells,
+                timings=hdf5.time, file="timings_hdf5_col.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="HDF5 (column-chunk)", Ngenes=ngenes, Ncells=ncells,
-                timings=col.chunk.time, file="timings_hdf5_col.txt", overwrite=overwrite)
     writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, 
                 timings=def.time, file="timings_hdf5_col.txt", overwrite=overwrite)
-
-    if (ncells <= limit) {
-        writeToFile(Type="HDF5 (rechunked)", Ngenes=ngenes, Ncells=ncells,
-                    timings=col.rechunk.time, file="timings_hdf5_col.txt", overwrite=overwrite)
-        writeToFile(Type="HDF5 (row-chunk)", Ngenes=ngenes, Ncells=ncells,
-                    timings=col.xchunk.time, file="timings_hdf5_col.txt", overwrite=overwrite)
-    }
 }
 
 ###########################
@@ -62,45 +42,97 @@ for (ncells in c(100, 200, 500, 1000, 2000, 5000, 10000)) {
 
 ncells <- 1000
 overwrite <- TRUE
-limit <- 5000
-for (ngenes in c(100, 200, 500, 10000, 20000, 50000, 100000)) {
+for (ngenes in c(10000, 20000, 50000, 100000)) {
+    fpath <- file.path(tmp.dir, "rowcomp.h5")
 
-    row.chunk.time <- row.xchunk.time <- row.contig.time <- row.rechunk.time <- def.time <- numeric(10)
+    hdf5.time <- def.time <- numeric(10)
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        row.chunk.dim <- c(1, ncells)
-        out.row <- writeHDF5Array(dense.counts, file.path(tmp.dir, "rowcomp.h5"), chunk_dim=row.chunk.dim, level=6)
-
-        row.chunk.time[it] <- timeExprs(BeachmatRowSum(out.row), times=1)
+        out.row <- writeHDF5Array(dense.counts, fpath, name="yay", chunk_dim=c(1, ncells), level=6)
+        hdf5.time[it] <- timeExprs(BeachmatRowSum(out.row), times=1)
         def.time[it] <- timeExprs(BeachmatRowSum(dense.counts))
-
-        if (ngenes <= limit) { # Takes too long, just do this once.
-            out.contig <- writeHDF5Array(dense.counts, file.path(tmp.dir, "contig.h5"), level=0)
-            out.col <- writeHDF5Array(dense.counts, file.path(tmp.dir, "colcomp.h5"), chunk_dim=c(min(ngenes, 5000), 1), level=6)
-
-            row.contig.time[it] <- timeExprs(BeachmatRowSum(out.contig), times=1)
-            row.xchunk.time[it] <- timeExprs(BeachmatRowSum(out.bycol), times=1)
-            row.rechunk.time[it] <- timeExprs({
-                out.row2 <- rechunk(out.byrow, file.path(tmp.dir, "rowcomp2.h5"), byrow=TRUE)
-                BeachmatRowSum(out.row2)
-            }, times=1)
-        }
+        unlink(fpath)
     }
 
-    writeToFile(Type="HDF5 (row-chunk)", Ngenes=ngenes, Ncells=ncells,
-                timings=row.chunk.time, file="timings_hdf5_row.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5Array", Ngenes=ngenes, Ncells=ncells,
+                timings=hdf5.time, file="timings_hdf5_row.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="Rcpp", Ngenes=ngenes, Ncells=ncells, 
+    writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, 
                 timings=def.time, file="timings_hdf5_row.txt", overwrite=overwrite)
+}
 
-    if (ngenes <= limit) {
-        writeToFile(Type="HDF5 (rechunked)", Ngenes=ngenes, Ncells=ncells,
-                    timings=row.rechunk.time, file="timings_hdf5_row.txt", overwrite=overwrite)
-        writeToFile(Type="HDF5 (contiguous)", Ngenes=ngenes, Ncells=ncells,
-                    timings=row.contig.time, file="timings_hdf5_row.txt", overwrite=overwrite)
-        writeToFile(Type="HDF5 (column-chunk)", Ngenes=ngenes, Ncells=ncells,
-                    timings=row.xchunk.time, file="timings_hdf5_row.txt", overwrite=overwrite)
+###########################
+# Column access, alternative layouts.
+
+ngenes <- 1000
+overwrite <- TRUE
+for (ncells in c(100, 200, 500)) { # a _lot_ shorter, as it takes too long using the full set of rows/columns.
+    fpaths <- file.path(tmp.dir, c("contig.h5", "colcomp.h5", "rowcomp.h5", "rechunk.h5"))
+    colchunk.time <- rowchunk.time <- contig.time <- rechunk.time <- numeric(10)
+
+    for (it in seq_len(10)) {         
+        dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
+        out.contig <- writeHDF5Array(dense.counts, fpaths[1], name="yay", level=0)
+        out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
+        out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6)
+
+        contig.time[it] <- timeExprs(BeachmatColSum(out.contig))
+        colchunk.time[it] <- timeExprs(BeachmatColSum(out.bycol))
+        rowchunk.time[it] <- timeExprs(BeachmatColSum(out.byrow), times=1)
+        rechunk.time[it] <- timeExprs({
+            out.col2 <- rechunk(out.byrow, fpaths[4], byrow=FALSE)
+            BeachmatColSum(out.col2)
+        }, times=1)
+
+        unlink(fpaths)
     }
+
+    writeToFile(Type="HDF5 (contiguous)", Ngenes=ngenes, Ncells=ncells,
+                timings=contig.time, file="timings_hdf5_col_layout.txt", overwrite=overwrite)
+    overwrite <- FALSE 
+    writeToFile(Type="HDF5 (column-chunk)", Ngenes=ngenes, Ncells=ncells,
+                timings=colchunk.time, file="timings_hdf5_col_layout.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5 (row-chunk)", Ngenes=ngenes, Ncells=ncells,
+                timings=rowchunk.time, file="timings_hdf5_col_layout.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5 (rechunked)", Ngenes=ngenes, Ncells=ncells,
+                timings=rechunk.time, file="timings_hdf5_col_layout.txt", overwrite=overwrite)
+}
+
+###########################
+# Row access, alternative layouts.
+
+ncells <- 100
+overwrite <- TRUE
+for (ngenes in c(1000, 2000, 5000)) { 
+    fpaths <- file.path(tmp.dir, c("contig.h5", "colcomp.h5", "rowcomp.h5", "rechunk.h5"))
+    colchunk.time <- rowchunk.time <- contig.time <- rechunk.time <- numeric(10)
+
+    for (it in seq_len(10)) {
+        dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
+        out.contig <- writeHDF5Array(dense.counts, fpaths[1], name="yay", level=0)
+        out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
+        out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6) 
+    
+        contig.time[it] <- timeExprs(BeachmatRowSum(out.contig), times=1)
+        colchunk.time[it] <- timeExprs(BeachmatRowSum(out.bycol), times=1)
+        rowchunk.time[it] <- timeExprs(BeachmatRowSum(out.byrow), times=1)
+        rechunk.time[it] <- timeExprs({
+            out.row2 <- rechunk(out.bycol, fpaths[4], byrow=TRUE)
+            BeachmatRowSum(out.row2)
+        }, times=1)
+
+        unlink(fpaths)
+    }
+
+    writeToFile(Type="HDF5 (contiguous)", Ngenes=ngenes, Ncells=ncells,
+                timings=contig.time, file="timings_hdf5_row_layout.txt", overwrite=overwrite)
+    overwrite <- FALSE 
+    writeToFile(Type="HDF5 (column-chunk)", Ngenes=ngenes, Ncells=ncells,
+                timings=colchunk.time, file="timings_hdf5_row_layout.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5 (row-chunk)", Ngenes=ngenes, Ncells=ncells,
+                timings=rowchunk.time, file="timings_hdf5_row_layout.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5 (rechunked)", Ngenes=ngenes, Ncells=ncells,
+                timings=rechunk.time, file="timings_hdf5_row_layout.txt", overwrite=overwrite)
 }
 
 ###########################
