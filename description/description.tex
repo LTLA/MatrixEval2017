@@ -320,14 +320,15 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
 
 A key determinant of the performance of the \code{HDF5Matrix} representation is the layout of data in the HDF5 file.
 There are two layout choices for large matrices: contiguous or chunked.
-In the contiguous layout, raw data are stored next to each other in the file, analogous to column-major storage of simple matrices in memory.
+In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of simple matrices in memory.
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
-For example, in a row-chunked layout, all values in the same row of a matrix would constitute one chunk.
+For example, in a row-chunked layout, each chunk would only contain consecutive values from the same row of a matrix, i.e., chunks are nested within each row.
+Similarly, with column-wise chunking, each chunk would be nested within a column.
 Each chunk is always read (or written) in its entirety, even when only a portion of the chunk is requested.
-Chunking is required for compression on disk and fast access to data -- \textit{provided that the layout is consistent with the expected access pattern}.
+Chunking is required for compression on disk, and more importantly, for fast access to data -- \textit{provided that the layout is consistent with the expected access pattern}.
 
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
-For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks (i.e., each column is a chunk) with compression, and row-wise chunks with compression.
+For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks with compression.
 The contiguous layout is the fastest as only one disk read needs to be performed per column (Figure~YY).
 Column-wise chunking also involves a single disk read per column, but is slower due to the overhead of decompression and chunk caching.
 Row-wise chunking is the slowest because access to a single column involves a disk read for every row chunk in its entirety, i.e., $N_r$ reads in total.
@@ -346,6 +347,17 @@ This involves some computational overhead due to the need for (de)compression at
 Despite this, \beachmat{} access times drop with sparser matrices because the compression becomes more effective, reducing the amount of data that needs to be read from disk (Figure~YY).
 Obviously, the size of the HDF5 file also decreases with compression (Figure~YY), which reduces the risk that some disk usage limit will be exceeded during the course of an analysis.
 This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or other intermediate results.
+
+\subsection*{Other matrix types}
+While the matrix representations described above are the most common for storing scRNA-seq data, \beachmat{} can also be easily extended to accommodate more matrix types.
+For example, the packed symmetric representation from the \textit{Matrix} package only stores the upper or lower half of a symmetric matrix.
+This provides an efficient representation of distance matrices, which are often generated for clustering of cells based on their expression patterns.
+\beachmat{} supports row and column access of data from packed symmetric matrices through the same interface that is used for the other representations.
+
+Another option for storing matrices on disk is to use the \textit{bigmemory} package \cite{kane2013scalable}.
+This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to an on-disk representation.
+In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of HDF5 and portability of HDF5 files across systems.
+Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
 \subsection*{Storing matrix output}
 In addition to accessing data in existing matrices, the \beachmat{} API also supports the construction of various R matrices in C++.
@@ -370,11 +382,65 @@ Of course, this would involve writing two different versions of code for sparse 
 \section*{Performance of the API on real data sets}
 
 \subsection*{Access times for the brain data set}
+We evaluated the performance of \beachmat{} with the different matrix representations on real data, using the count matrix from a scRNA-seq study of the mouse brain \cite{zeisel2015brain}.
+This data set contains integer expression values for 19XXX genes in each of 3005 cells, of which X\% are non-zero.
+We note that this is not a particularly large matrix, especially in the context of droplet-based experiments that routinely generate data for tens of thousands of cells.
+However, its size ensures that each of the matrix representations -- including those that are stored in memory -- can be easily evaluated without recourse to high-performance computing resources.
+
+The performances of the different representations on the brain data set largely recapitulate the results with simulated data.
+Row and column accesses from a simple matrix are the fastest, followed by accesses from a sparse matrix (Figure~XX).
+HDF5-backed matrices provide the slowest access but also the smallest in-memory footprint (Figure~XX).
+The on-disk size of the HDF5 file is also relatively small, requiring only XX MB of space for each \code{HDF5Matrix} instance. 
+These results demonstrate that the strengths and weaknesses of the different representations are still relevant on real data.
 
 \subsection*{Analysis of a large data set}
 
 \section*{Discussion}
-% Need some words about bigmemory.
+% Some words about disappearing sparsity.
+
+\section*{Methods}
+
+\subsection*{Access timings with simulated data}
+Double-precision dense matrices of a specified dimension were filled with values sampled from a standard normal distribution.
+By default, dense matrices are constructed in the simple format -- conversion into a \code{HDF5Matrix} object was performed using methods from the \textit{HDF5Array} package.
+Double-precision CSC matrices of a specified dimension and density were generated with the \code{rsparsematrix} function from the \textit{Matrix} package. 
+These are constructed as \code{dgCMatrix} instances, and were converted to simple matrices or \code{HDF5Matrix} objects as required.
+
+To time row and column access with \beachmat{} and other APIs, we considered a C++ function that computes the sum of values in each row or column, respectively.
+Calculation of the row/column sums ensures that each entry of the row/column is visited in order to use its value.
+This means that each API has to do some work, avoiding trivially fast approaches where a pointer or iterator is returned.
+Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
+
+Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
+This was repeated 10 times with new matrices, and the average time and standard error was computed for each access method. 
+Row and column access times were evaluated with respect to increasing numbers of rows and columns, respectively.
+For sparse matrices and to test the effects of HDF5 compression, performance was also evaluated with respect to increasing density of non-zero entries.
+
+\subsection*{Rechunking of the HDF5 file layout}
+We developed a simple yet efficient approach for converting between row-wise and column-wise chunking in a HDF5 file.
+Consider an existing file with chunk dimensions of $(p_1, 1)$ for $p_1$ rows and 1 column, i.e., column-wise chunking where each chunk contains $p_1$ values.
+Assume that we want to obtain a new file with chunk dimensions of $(1, p_2)$, i.e., row-wise chunks containing $p_2$ values.
+We load $p_2$ column-wise chunks from the original file into memory at once, and write them into a new file as $p_1$ row-wise chunks.
+This is repeated until all data are copied from the original to the new file.
+The reverse procedure can be performed to convert from row-wise chunks to column-wise chunks.
+
+Our rechunking approach minimizes the number of disk accesses by ensuring that each read/write processes all data from a single chunk.
+However, it assumes that the space required by $p_1p_2$ values is small enough to fit into memory. 
+This is usually not an issue, e.g., for $p_1=p_2=10^4$ with double-precision data, each read/write iteration would only require 800 MB of memory.
+In cases where $p_1$ is very large, it is possible to first convert to row-wise chunks of size $p'_2$ (where $p'_2$ is some factor of $p_2$) in an intermediate file.
+The intermediate file can then be easily processed into a new file containing row-wise chunks of size $p_2$.
+
+For all procedures involving HDF5 files, we used column- or row-wise chunks containing 5000 double-precision values.
+If any chunk dimension exceeded the corresponding dimension of the matrix, the chunk size was set to the exceeded dimension instead.
+We restricted ourselves to column- and row-wise chunks as these are optimal for access to any single column or row, respectively.
+Obviously, other layouts are possible but their performances will depend on other factors (e.g., the size of the chunk cache, the order of access of rows/columns) and will not be considered here.
+
+\subsection*{Access timings with the brain data}
+scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from the corresponding website (http://linnarssonlab.org/cortex/).
+Counts were read into R and converted into a simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
+In each case, timings were performed as described above for calculation of the row or column sums.
+This was repeated 10 times to obtain a stable average time for each representation.
+Column- and row-wise chunking were used for the column and row sums of a \code{HDF5Matrix}.
 
 {\small
     \bibliography{ref}
