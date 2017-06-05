@@ -6,6 +6,10 @@ plotter <- function(data, wrt, col, lty, pch, loc="topleft", ...) {
     by.method <- split(data[,c(wrt, "Time")], data$Type, drop=TRUE)
     par(mar=c(5.1, 5.1, 4.1, 2.1))
     plot(1,1,type="n", xlim=xranges, ylim=yranges, log="xy", ylab="Time (ms)", cex.axis=1.2, cex.lab=1.4, ..., cex.main=1.4)
+ 
+    line.ranges <- range(log2(yranges))
+    line.heights <- 2^seq(floor(line.ranges[1]), ceiling(line.ranges[2]), by=1)
+    abline(h=line.heights, lwd=0.5, lty=3, col="grey50")
 
     if (missing(col)) { col <- rep("black", length(by.method)) }
     if (missing(lty)) { lty <- rep(1, length(by.method)) }

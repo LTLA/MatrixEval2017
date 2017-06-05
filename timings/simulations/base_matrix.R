@@ -17,10 +17,10 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
     }
 
     writeToFile(Type="beachmat", Ngenes=ngenes, Ncells=ncells,
-                timing=col.time, file="timings_base_col.txt", overwrite=overwrite)
+                timings=col.time, file="timings_base_col.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    write.table(Type="Rcpp", Ngenes=ngenes, Ncells=ncells, 
-                timing=def.time, file="timings_base_col.txt", overwrite=overwrite)
+    writeToFile(Type="Rcpp", Ngenes=ngenes, Ncells=ncells, 
+                timings=def.time, file="timings_base_col.txt", overwrite=overwrite)
 }
 
 ###########################
@@ -38,9 +38,9 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
     }
 
     writeToFile(Type="beachmat", Ngenes=ngenes, Ncells=ncells, 
-                timing=row.time, file="timings_base_row.txt", overwrite=overwrite)
+                timings=row.time, file="timings_base_row.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    write.table(Type="Rcpp", Ngenes=ngenes, Ncells=ncells, 
-                timing=def.time, file="timings_base_row.txt", overwrite=overwrite)
+    writeToFile(Type="Rcpp", Ngenes=ngenes, Ncells=ncells, 
+                timings=def.time, file="timings_base_row.txt", overwrite=overwrite)
 }
 
