@@ -16,16 +16,12 @@ DefaultColSum <- function(M) {
     .Call(cxx_get_numeric_default_margins, M, 1L)
 }
 
-RandomRowSum <- function(M, o) {
-    .Call(cxx_get_numeric_random_margins, M, 2L, o-1L)
+NaiveSparseRowSum <- function(M) {
+    .Call(cxx_get_numeric_sparse_row_margins, M)
 }
 
-RandomColSum <- function(M, o) {
-    .Call(cxx_get_numeric_random_margins, M, 1L, o-1L)
-}
-
-SimpleRowSum <- function(M) {
-    .Call(cxx_get_numeric_simple_margins, M)
+DirectSimpleRowSum <- function(M) {
+    .Call(cxx_get_numeric_simple_row_margins, M)
 }
 
 ArmaRowSum <- function(M) {

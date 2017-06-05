@@ -4,17 +4,19 @@
 #include <RcppArmadillo.h>
 #include "beachmat/numeric_matrix.h"
 
+arma::sp_mat create_sparse_arma(SEXP);
+
 extern "C" { 
 
 SEXP get_numeric_margins(SEXP, SEXP);
 
 SEXP get_numeric_default_margins(SEXP, SEXP);
 
-SEXP get_numeric_random_margins(SEXP, SEXP, SEXP);
+SEXP get_numeric_simple_row_margins(SEXP);
+
+SEXP get_numeric_sparse_row_margins(SEXP);
 
 SEXP get_numeric_arma_margins(SEXP, SEXP);
-
-SEXP get_numeric_simple_margins(SEXP);
 
 SEXP edit_numeric_matrix(SEXP);
 

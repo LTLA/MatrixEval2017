@@ -67,46 +67,4 @@ Rcpp::NumericVector get_default_margins(M mat, const Rcpp::IntegerVector& mode) 
     }
 }
 
-/* Test random row/column access. */
-
-template <class T, class M>  
-Rcpp::NumericVector get_random_margins(M ptr, const Rcpp::IntegerVector& mode, const Rcpp::IntegerVector& order) {
-    if (mode.size()!=1) { 
-        throw std::runtime_error("'mode' should be an integer scalar"); 
-    }
-    const int Mode=mode[0];
-    const size_t& nrows=ptr->get_nrow();
-    const size_t& ncols=ptr->get_ncol();
-
-    if (Mode==1) { 
-        // By column.
-        Rcpp::NumericVector output(ncols);
-        if (order.size()!=ncols) {
-            throw std::runtime_error("order vector should have length equal to the number of columns");
-        }
-        T target(nrows);
-
-        for (auto oIt=order.begin(); oIt!=order.end(); ++oIt) {
-            ptr->get_col(*oIt, target.begin()); // assume zero-indexed.
-            output[*oIt]=std::accumulate(target.begin(), target.end(), 0.0);
-        }
-        return output;
-    } else if (Mode==2) { 
-        // By row.
-        Rcpp::NumericVector output(nrows);
-        if (order.size()!=nrows) {
-            throw std::runtime_error("order vector should have length equal to the number of rows");
-        }
-        T target(ncols);
-
-        for (auto oIt=order.begin(); oIt!=order.end(); ++oIt) {
-            ptr->get_row(*oIt, target.begin());
-            output[*oIt]=std::accumulate(target.begin(), target.end(), 0.0);
-        }
-        return output;
-    } else { 
-        throw std::runtime_error("'mode' should be in [1,2]"); 
-    }
-}
-
 #endif
