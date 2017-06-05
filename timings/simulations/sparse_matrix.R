@@ -68,7 +68,7 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
 }
 
 ###########################
-# Random row access
+# Naive row access
 
 ncells <- 1000
 overwrite <- TRUE
@@ -78,17 +78,15 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
         row.time <- def.time <- numeric(10)
         for (it in seq_len(10)) { 
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
-            o <- sample(ngenes, ngenes) # Randomizing to force binary searches at each look-up.
-            i <- seq_len(ngenes)
-            row.time[it] <- timeExprs(RandomRowSum(sparse.counts, o, times=1)) # too slow.
-            def.time[it] <- timeExprs(RandomRowSum(sparse.counts, i))
+            row.time[it] <- timeExprs(NaiveSparseRowSum(sparse.counts), times=1) # slow, so only once.
+            def.time[it] <- timeExprs(BeachmatRowSum(sparse.counts))
         }
 
         writeToFile(Type="naive", Ngenes=ngenes, Ncells=ncells, Density=density, 
-                    timings=row.time, file="timings_sparse_row_rand.txt", overwrite=overwrite)
+                    timings=row.time, file="timings_sparse_row_naive.txt", overwrite=overwrite)
         overwrite <- FALSE 
         writeToFile(Type="improved", Ngenes=ngenes, Ncells=ncells, Density=density, 
-                    timings=def.time, file="timings_sparse_row_rand.txt", overwrite=overwrite)
+                    timings=def.time, file="timings_sparse_row_naive.txt", overwrite=overwrite)
     }
 }
 

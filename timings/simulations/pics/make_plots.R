@@ -77,7 +77,7 @@ dev.off()
 
 # By access pattern.
 
-incoming <- read.table("../timings_sparse_row_rand.txt", header=TRUE)
+incoming <- read.table("../timings_sparse_row_naive.txt", header=TRUE)
 incoming$Ngenes <- incoming$Ngenes/1e3
 incoming$Density <- incoming$Density * 100
 
