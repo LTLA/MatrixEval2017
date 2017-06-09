@@ -439,19 +439,20 @@ These results demonstrate that the strengths and weaknesses of the different rep
 
 \subsection*{Access timings with simulated data}
 Double-precision dense matrices of a specified dimension were filled with values sampled from a standard normal distribution.
-By default, dense matrices are constructed in the simple format -- conversion into a \code{HDF5Matrix} object was performed using methods from the \textit{HDF5Array} package.
+By default, all dense matrices were constructed in the simple format.
 Double-precision CSC matrices of a specified dimension and density were generated with the \code{rsparsematrix} function from the \textit{Matrix} package. 
-These are constructed as \code{dgCMatrix} instances, and were converted to simple matrices or \code{HDF5Matrix} objects as required.
+These were constructed as \code{dgCMatrix} instances.
+Conversion of each matrix object into other representations was performed prior to timing access with the C++ APIs.
 
-To time row and column access with \beachmat{} and other APIs, we considered a C++ function that computes the sum of values in each row or column, respectively.
+To time row and column access with \beachmat{} and other APIs, we wrote a C++ function that computes the sum of values in each row or column, respectively.
 Calculation of the row/column sums ensures that each entry of the row/column is visited in order to use its value.
-This means that each API has to do some work, avoiding trivially fast approaches where a pointer or iterator is returned.
+This means that each API has to do some work, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
 Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
 
 Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
 This was repeated 10 times with new matrices, and the average time and standard error was computed for each access method. 
 Row and column access times were evaluated with respect to increasing numbers of rows and columns, respectively.
-For sparse matrices and to test the effects of HDF5 compression, performance was also evaluated with respect to increasing density of non-zero entries.
+For sparse matrices and to test the effects of HDF5 compression, results were also recorded with respect to increasing density of non-zero entries.
 
 \subsection*{Rechunking of the HDF5 file layout}
 We developed a simple yet efficient approach for converting between row-wise and column-wise chunking in a HDF5 file.
@@ -465,7 +466,7 @@ Our rechunking approach minimizes the number of disk accesses by ensuring that e
 However, it assumes that the space required by $p_1p_2$ values is small enough to fit into memory. 
 This is usually not an issue, e.g., for $p_1=p_2=10^4$ with double-precision data, each read/write iteration would only require 800 MB of memory.
 In cases where $p_1$ is very large, it is possible to first convert to row-wise chunks of size $p'_2$ (where $p'_2$ is some factor of $p_2$) in an intermediate file.
-The intermediate file can then be easily processed into a new file containing row-wise chunks of size $p_2$.
+The intermediate file can then be easily processed into a new file containing row-wise chunks of size $p_2$, requiring only $p_2/p'_2$ chunks to be held in memory.
 
 For all procedures involving HDF5 files, we used column- or row-wise chunks containing 5000 double-precision values.
 If any chunk dimension exceeded the corresponding dimension of the matrix, the chunk size was set to the exceeded dimension instead.
@@ -473,11 +474,11 @@ We restricted ourselves to column- and row-wise chunks as these are optimal for 
 Obviously, other layouts are possible but their performances will depend on other factors (e.g., the size of the chunk cache, the order of access of rows/columns) and will not be considered here.
 
 \subsection*{Access timings with the brain data}
-scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from the corresponding website (http://linnarssonlab.org/cortex/).
+scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex/}.
 Counts were read into R and converted into a simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
 In each case, timings were performed as described above for calculation of the row or column sums.
 This was repeated 10 times to obtain a stable average time for each representation.
-Column- and row-wise chunking were used for the column and row sums of a \code{HDF5Matrix}.
+Column- and row-wise chunking were used when timing the column and row sums, respectively, of a \code{HDF5Matrix}.
 
 {\small
     \bibliography{ref}
