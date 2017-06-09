@@ -48,7 +48,7 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
     hdf5.time <- def.time <- numeric(10)
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.row <- writeHDF5Array(dense.counts, fpath, name="yay", chunk_dim=c(1, 5000), level=6)
+        out.row <- writeHDF5Array(dense.counts, fpath, name="yay", chunk_dim=c(1, ncells), level=6)
         hdf5.time[it] <- timeExprs(BeachmatRowSum(out.row), times=1)
         def.time[it] <- timeExprs(BeachmatRowSum(dense.counts))
         unlink(fpath)
