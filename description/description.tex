@@ -272,11 +272,11 @@ This reduces the search space and the amount of computational work for large $N_
 
 \begin{figure}[btp]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_rand_density.pdf}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_naive_density.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_rand_nrow.pdf}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_naive_nrow.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
@@ -381,39 +381,45 @@ Analysis pipelines should also be arranged such that steps requiring column acce
 This minimizes the number of rechunking steps that need to be performed between steps.
 
 As previously mentioned, chunking of the HDF5 file allows for compression of data using filters such as ZLIB and SZIP.
-This decreases the size of the HDF5 file by at least 2-fold for dense matrices (800 MB to 400 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (20 MB for the same matrix with 1\% non-zero entries).
+This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
 The use of smaller files reduces the risk that disk space will be exceeded during the course of an analysis.
-This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or other intermediate results.
+This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or intermediate results.
 
 \subsection*{Other matrix types}
-While the matrix representations described above are the most common for storing scRNA-seq data, \beachmat{} can also be easily extended to accommodate more matrix types.
+While the matrix representations described above are the most commonly used for storing scRNA-seq data, \beachmat{} can be easily extended to other representations.
 For example, the packed symmetric representation from the \textit{Matrix} package only stores the upper or lower half of a symmetric matrix.
-This provides an efficient representation of distance matrices, which are often generated for clustering of cells based on their expression patterns.
+This provides an efficient representation of distance matrices, which are often used to cluster cells based on their expression profiles.
 \beachmat{} supports row and column access of data from packed symmetric matrices through the same interface that is used for the other representations.
+
+\beachmat{} also supports data access from \code{RleMatrix} instances from the \textit{DelayedArray} package.
+The \code{RleMatrix} stores its values as a column-major run-length encoding, where stretches of the same value in the one-dimensional array are stored as a single run.
+This reduces memory usage in a more general manner than a sparse matrix, especially for matrices with many small but non-zero counts.
+As with CSC matrices, \beachmat{} caches the row indices to speed up consecutive row access.
 
 Another option for storing matrices on disk is to use the \textit{bigmemory} package \cite{kane2013scalable}.
 This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to an on-disk representation.
-In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of HDF5 and portability of HDF5 files across systems.
+In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of the HDF5 specification and portability of HDF5 files across systems.
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
 \subsection*{Storing matrix output}
 In addition to accessing data in existing matrices, the \beachmat{} API also supports the construction of various R matrices in C++.
 For integer, logical and double-precision data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those constructed in R.
 Logical and double-precision data can also be stored in CSC format, where only true or non-zero values are retained in the \code{lgCMatrix} or \code{dgCMatrix} instance, respectively.
-(The \textit{Matrix} package does not currently support integer sparse matrices.)
-We do not allow character matrix output yet, due to the complexity of handling variable-length strings in a manner that is compatible with both R and HDF5.
+(The \textit{Matrix} package does not support sparse integer matrices.)
+We do not support character matrix output yet, due to the complexity of handling variable-length strings in a manner that is compatible with both R and HDF5.
 
 The output representation can either be explicitly specified in the code, or it can be automatically chosen to match some input representation.
 To illustrate, consider a C++ function that accepts a matrix as input and returns a matrix of similar dimensions.
-If the function receives data in the simple matrix format, one might assume that there is enough memory to also store the output in the simple format;
+If the input is in the simple matrix format, one might assume that there is enough memory to also store the output in the simple format;
 whereas if the input is a \code{HDF5Matrix}, one could presume that the output would be similarly large, thus requiring a \code{HDF5Matrix} representation for the results.
 This facility means that results of processing in C++ can be readily returned in the most suitable representation for manipulation in R.
  
 Note that the layout considerations described for HDF5-backed input are equally applicable to HDF5-backed output.
 If the matrix is to be filled by row or column, the layout should be set to reflect this write access pattern for best performance.
-This can be achieved by using functions from the \textit{HDF5Array} package to set the global chunking dimensions, which will be respected by the \beachmat{} API.
-In addition, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
-A faster algorithm can be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
+This can be achieved by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by the \beachmat{} API in the C++ code.
+
+As an aside, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
+In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
 Of course, this would involve writing two different versions of code for sparse and non-sparse input/output, which is the scenario that \beachmat{} was designed to avoid.
 
 \section*{Performance of the API on real data sets}
