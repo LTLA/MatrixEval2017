@@ -13,6 +13,21 @@ rechunk <- function(incoming, outname, byrow=TRUE) {
     HDF5Array(outname, incoming@seed@name)
 }
 
+makeContiguous <- function(data, file, name) {
+    # Rewriting this function, as h5createDataset2 automatically sets the chunk dimensions to 'dim'.
+    # I think the chunk dimensions are ignored by h5createDataset if level=0, but this just makes sure
+    # by explicitly specifying chunk dimensions of NULL in h5createDataset().
+    dim <- dim(data)
+    type <- storage.mode(data)
+    chunk_dim <- NULL
+    level <- 0
+    h5createFile(file)
+    h5createDataset(file, name, dim, storage.mode=type, size=NULL, chunk = chunk_dim, level=level)
+    appendDatasetCreationToHDF5DumpLog(file, name, dim, type, chunk_dim, level)
+    h5write(data, file, name)
+    HDF5Array(file, name)
+}
+
 ###########################
 # Column access
 
@@ -72,9 +87,9 @@ for (ncells in c(100, 200, 500)) { # a _lot_ shorter, as it takes too long using
 
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.contig <- writeHDF5Array(dense.counts, fpaths[1], name="yay", level=0)
+        out.contig <- makeContiguous(dense.counts, fpaths[1], name="yay")
         out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
-        out.bycol0 <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=0) # Same but without compression.
+        out.bycol0 <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=1) # Reduced compression (level=0 doesn't actually chunk).
         out.byrow <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(1, ncells), level=6)
 
         contig.time[it] <- timeExprs(BeachmatColSum(out.contig))
@@ -113,10 +128,10 @@ for (ngenes in c(1000, 2000, 5000)) {
 
     for (it in seq_len(10)) {
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.contig <- writeHDF5Array(dense.counts, fpaths[1], name="yay", level=0)
+        out.contig <- makeContiguous(dense.counts, fpaths[1], name="yay")
         out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
         out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6) 
-        out.byrow0 <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(1, ncells), level=0) 
+        out.byrow0 <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(1, ncells), level=1) # Reduced compression.
     
         contig.time[it] <- timeExprs(BeachmatRowSum(out.contig), times=1)
         colchunk.time[it] <- timeExprs(BeachmatRowSum(out.bycol), times=1)
@@ -156,9 +171,9 @@ for (density in c(0.01, 0.05, 0.1, 0.2, 0.5, 1)) {
 
     for (it in seq_len(10)) {         
         sparse.counts <- as.matrix(rsparsematrix(ngenes, ncells, density))
-        out.contig <- writeHDF5Array(sparse.counts, fpaths[1], name="yay", level=0)
+        out.contig <- makeContiguous(sparse.counts, fpaths[1], name="yay")
         out.bycol <- writeHDF5Array(sparse.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
-        out.bycol0 <- writeHDF5Array(sparse.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=0)
+        out.bycol0 <- writeHDF5Array(sparse.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=1) # Reduced compression.
 
         contig.time[it] <- timeExprs(BeachmatColSum(out.contig))
         colchunk.time[it] <- timeExprs(BeachmatColSum(out.bycol))

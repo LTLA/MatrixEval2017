@@ -114,21 +114,21 @@ dev.off()
 # Layout type.
 
 incoming <- read.table("../timings_hdf5_col_layout.txt", header=TRUE, sep="\t")
-incoming$Type <- sub(", uncompressed", " (0)", incoming$Type)
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks (0)", "Column chunks", "Row chunks", "Rechunked")) 
+incoming <- incoming[-grep("uncompressed", incoming$Type),]
+incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rechunked")) 
 
 pdf("HDF5_col_layout.pdf")
-plotter(incoming, "Ncells", c("grey50", "salmon", "red", "tan4", "blue"), pch=c(16, 1, 17, 15, 18), lty=c(1,2,1,2,2),
-        xlab="Number of columns", main="Column access", cex.axis=1, upper=100000)
+plotter(incoming, "Ncells", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), lty=c(1,1,2,2),
+        xlab="Number of columns", main="Column access", cex.axis=1, upper=50000)
 dev.off()
 
 incoming <- read.table("../timings_hdf5_row_layout.txt", header=TRUE, sep="\t")
-incoming$Type <- sub(", uncompressed", " (0)", incoming$Type)
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Row chunks (0)", "Row chunks", "Column chunks", "Rechunked")) 
+incoming <- incoming[-grep("uncompressed", incoming$Type),]
+incoming$Type <- factor(incoming$Type, c("Contiguous", "Row chunks", "Column chunks", "Rechunked")) 
 incoming$Time <- incoming$Time/1e3
 
 pdf("HDF5_row_layout.pdf")
-plotter(incoming, "Ngenes", c("grey50", "salmon", "red", "tan4", "blue"), pch=c(16, 1, 17, 15, 18), lty=c(1,2,1,2,2),
+plotter(incoming, "Ngenes", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), lty=c(1,1,2,2),
         xlab="Number of rows", main="Row access", cex.axis=1, upper=100, ylab="Time (s)", yaxt="n")
 ticks <- c(10^(-2:2))
 axis(2, at=ticks, ticks)
