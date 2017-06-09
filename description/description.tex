@@ -189,12 +189,13 @@ Thus, the utility of simple matrices is limited to relatively small scRNA-seq da
         \includegraphics[width=\textwidth]{../timings/simulations/pics/base_row.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Time required for column or row access of simple matrices using \beachmat{} or \textit{Rcpp}.
+    \caption{Time required for column or row access of simple matrices using the \beachmat{} or \textit{Rcpp} APIs.
         (a) Column access time with respect to increasing number of columns, for a matrix with 10000 rows.
         (b) Row access time with respect to increasing number of rows, for a matrix with 1000 columns.
-        Access was timed after computing the column/row sums to ensure iteration across data values.
-        Each time represents the average of 10 simulations (in milliseconds).
+        Access was timed after computing the column/row sums to ensure iteration across data values with each API.
+        Each time represents the average of 10 simulations.
         Standard errors were negligible and are not shown.
+        Intervals between the horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:basetime}
 \end{figure}
@@ -249,8 +250,7 @@ This provides faster column-level access than the \beachmat{} API as no copying 
     \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo} (arma), compared to access times for an equivalent simple matrix with \beachmat{} (dense).
         (a) Access times with respect to increasing density of non-zero entries (as a percentage of all entries), for a matrix with 10000 rows and 1000 columns.
         (b) Access times with respect to increasing number of columns, for a matrix with 10000 rows and 1\% non-zero entries.
-        Timings were computed after taking the column sums.
-        Each time represents the average of 10 simulations (with negligible standard errors).
+        Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:sparsecol}
 \end{figure}
@@ -287,10 +287,10 @@ This reduces the search space and the amount of computational work for large $N_
         \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Row access times for CSC matrices with \beachmat{}, using a naive binary search or the improved caching method (a, b); and in comparison to an equivalent simple matrix (dense) (c, d).
-        (a,c) Access times with respect to increasing density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
+    \caption{Row access times for CSC matrices using a naive binary search or the improved caching method in \beachmat{} (a, b); and in comparison to an equivalent simple matrix in \beachmat{} (dense) (c, d).
+        (a, c) Access times with respect to increasing density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
         (b, d) Access times with respect to increasing number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
-        Timings are shown in milliseconds and were computed after taking the row sums. 
+        Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:sparserow}
 \end{figure}
@@ -307,7 +307,7 @@ These results motivate the use of \beachmat{} for data access from sparse matric
 For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a dataset in a HDF5 file on disk, while in memory it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
-The in-memory representation is very small -- fewer than 100 kilobytes in size -- and simply extracts data from disk upon request.
+The in-memory representation is very small -- fewer than 3 kilobytes in size -- and simply extracts data from disk upon request.
 Each \code{HDF5Matrix} instance provides methods to mimic a real matrix object and allows users to manipulate the matrix in real time without the need to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the on-disk footprint remains manageable throughout the course of the analysis.
 
@@ -327,11 +327,10 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
         \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Access times for a HDF5-backed matrix from the \textit{HDF5Array} package.
+    \caption{Column and row access times for a HDF5-backed matrix.
         (a) Column access time with respect to increasing number of columns, for a dense matrix with 10000 rows.
         (b) Row access time with respect to increasing number of rows, for a dense matrix with 1000 columns.
-        Access was timed after computing the column/row sums.
-        Each time represents the average of 10 simulations.
+        Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5time}
 \end{figure}
@@ -348,7 +347,7 @@ Chunking is required for compression on disk, and more importantly, for fast acc
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
 For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
 The contiguous layout is the fastest as only one disk read needs to be performed per column (Figure~\ref{fig:hdf5layout}).
-Column-wise chunking with compression also involves a single disk read per column, but is slower due to the overhead of decompression.
+Column-wise chunking also involves a single disk read per column, but is slower due to the overhead of decompression and chunk caching.
 Row-wise chunking is the slowest because access to a single column involves a disk read for every row chunk in its entirety, i.e., $N_r$ reads in total.
 In fact, it is faster to convert (i.e., ``rechunk'') the entire data set to a column-wise chunk layout prior to performing column accesses via \beachmat{}.
 
@@ -361,13 +360,10 @@ In fact, it is faster to convert (i.e., ``rechunk'') the entire data set to a co
         \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_layout.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Access times for HDF5-backed matrices with different file layouts -- contiguous, row- or column-chunking, chunking without compression (0) and rechunking. 
+    \caption{Column/row access times for HDF5-backed matrices with different HDF5 file layouts, i.e., contiguous, row- or column-chunking with compression, and rechunking from one chunk layout to the optimal layout for each access pattern. 
         (a) Column access time with respect to increasing number of columns, for a dense matrix with 1000 rows.
-        Here, rechunking refers to a row-chunked matrix that was converted to a column-chunked matrix, where the time required for conversion is included.
         (b) Row access time with respect to increasing number of rows, for a dense matrix with 100 columns.
-        Here, rechunking refers to a column-chunked matrix that was converted to a row-chunked matrix.
-        In each simulation, access was timed after computing the column/row sums.
-        Each time represents the average of 10 simulations.
+        Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5layout}
 \end{figure}
@@ -422,19 +418,40 @@ As an aside, the use of \beachmat{} may not be optimal for sparse inputs to func
 In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
 Of course, this would involve writing two different versions of code for sparse and non-sparse input/output, which is the scenario that \beachmat{} was designed to avoid.
 
-\section*{Performance of the API on real data sets}
+\section*{Performance of \beachmat{} on real data sets}
 
 \subsection*{Access times for the brain data set}
 We evaluated the performance of \beachmat{} with the different matrix representations on real data, using the count matrix from a scRNA-seq study of the mouse brain \cite{zeisel2015brain}.
-This data set contains integer expression values for 19XXX genes in each of 3005 cells, of which X\% are non-zero.
+This data set contains integer expression values for 19972 genes in each of 3005 cells, of which 18\% are non-zero.
 We note that this is not a particularly large matrix, especially in the context of droplet-based experiments that routinely generate data for tens of thousands of cells.
-However, its size ensures that each of the matrix representations -- including those that are stored in memory -- can be easily evaluated without recourse to high-performance computing resources.
+However, its size ensures that each of the matrix representations -- including those that are stored in memory -- can be easily evaluated and compared.
 
 The performances of the different representations on the brain data set largely recapitulate the results with simulated data.
-Row and column accesses from a simple matrix are the fastest, followed by accesses from a sparse matrix (Figure~XX).
-HDF5-backed matrices provide the slowest access but also the smallest in-memory footprint (Figure~XX).
-The on-disk size of the HDF5 file is also relatively small, requiring only XX MB of space for each \code{HDF5Matrix} instance. 
-These results demonstrate that the strengths and weaknesses of the different representations are still relevant on real data.
+Row and column accesses from a simple matrix are the fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}).
+HDF5-backed matrices provide the slowest access but also the smallest in-memory footprint (2 KB, compared to 480 MB for simple matrices and 130 MB for sparse matrices).
+The on-disk size of the HDF5 file is also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance. 
+These results demonstrate that the strengths and weaknesses of the different representations are present with real data.
+
+\begin{figure}[bt]
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/real/pics/zeisel_col.pdf}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/real/pics/zeisel_row.pdf}
+        \caption{}
+    \end{subfigure}
+    \caption{Access times for various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
+        (a) Column access time for each representation, based on calculation of column sums.
+        HDF5: column-chunked \code{HDF5Matrix},
+        rechunk: row-chunked \code{HDF5Matrix} converted to a column-chunked layout.
+        (b) Row access time for each representation, based on calculation of row sums.
+        HDF5: row-chunked \code{HDF5Matrix},
+        rechunk: column-chunked \code{HDF5Matrix} converted to a row-chunked layout.
+        Heights represent the average of 10 repeats; standard errors were negligible and not shown.
+    }
+    \label{fig:zeisel}
+\end{figure}
 
 \subsection*{Analysis of a large data set}
 
@@ -474,17 +491,17 @@ This is usually not an issue, e.g., for $p_1=p_2=10^4$ with double-precision dat
 In cases where $p_1$ is very large, it is possible to first convert to row-wise chunks of size $p'_2$ (where $p'_2$ is some factor of $p_2$) in an intermediate file.
 The intermediate file can then be easily processed into a new file containing row-wise chunks of size $p_2$, requiring only $p_2/p'_2$ chunks to be held in memory.
 
-For all procedures involving HDF5 files, we used column- or row-wise chunks containing 5000 double-precision values.
+For all procedures involving chunked HDF5 files, we used column- or row-wise chunks containing 5000 double-precision values.
 If any chunk dimension exceeded the corresponding dimension of the matrix, the chunk size was set to the exceeded dimension instead.
 We restricted ourselves to column- and row-wise chunks as these are optimal for access to any single column or row, respectively.
 Obviously, other layouts are possible but their performances will depend on other factors (e.g., the size of the chunk cache, the order of access of rows/columns) and will not be considered here.
 
 \subsection*{Access timings with the brain data}
 scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex/}.
-Counts were read into R and converted into a simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
-In each case, timings were performed as described above for calculation of the row or column sums.
-This was repeated 10 times to obtain a stable average time for each representation.
-Column- and row-wise chunking were used when timing the column and row sums, respectively, of a \code{HDF5Matrix}.
+Counts were read into R and converted into a double-precision simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
+For each representation, timings of the calculation of row or column sums were performed as previously described.
+This was repeated 10 times to obtain an average time.
+Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
 
 {\small
     \bibliography{ref}
