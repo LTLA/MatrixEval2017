@@ -428,9 +428,9 @@ However, its size ensures that each of the matrix representations -- including t
 
 The performances of the different representations on the brain data set largely recapitulate the results with simulated data.
 Row and column accesses from a simple matrix are the fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}).
-HDF5-backed matrices provide the slowest access but also the smallest in-memory footprint (2 KB, compared to 480 MB for simple matrices and 130 MB for sparse matrices).
+HDF5-backed matrices provide the slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for simple matrices and 130 MB for sparse matrices).
 The on-disk size of the HDF5 file is also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance. 
-These results demonstrate that the strengths and weaknesses of the different representations are present with real data.
+These results demonstrate that the strengths and weaknesses of the different representations are recapitulated with real data.
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
