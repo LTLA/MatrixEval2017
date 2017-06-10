@@ -70,26 +70,27 @@ The chunk cache works by hashing the chunks according to their location in a one
 Consider a ``meta-matrix'' of chunks, where each chunk in the original matrix constitutes one entry in the meta-matrix.
 A meta-row consists of all chunks along one row of this meta-matrix; the equivalent principle applies for the meta-columns.
 Denote the number of meta-rows and meta-columns as $R_0$ and $C_0$, respectively.
-
 Now, let us flatten the meta-matrix into a one-dimensional array of chunks, organized in row-major format.
 The first chunk is assigned a hash index of 1 (technically 0, but we will use 1-based indexing for simplicity here).
-The next is assigned a hash index of 2, and so on.
-This continues until the hash index exceeds the number of cache slots $N$,  whereby the index is reset to 1 for the next chunk.
+The next chunk is assigned a hash index of 2, and so on.
+When the hash index exceeds the number of cache slots $N$, the index is reset to 1 for the next chunk.
+This process continues until all entries of the meta-matrix are assigned to a hash index.
 
 The hash indices are important as two chunks with the same hash index cannot exist at the same time in the chunk cache.
 This means that $N$ must be carefully chosen to ensure that all chunks in a meta-row or a meta-column have unique hash indices.
+Otherwise, an existing chunk in the cache will be evicted by a newer chunk with the same hash index, requiring the re-reading of the data in the former when accessing the next row/column.
 For a meta-row, this is trivial as $N$ only needs to be chosen to be greater than or equal to $C_0$.
+However, for a meta-column, some more thought is required.
 
-For a meta-column, some more thought is required.
 Let us consider the first chunk, lying in the first meta-column with a hash index of 1.
-The hash index of 1 will only return to the first meta-column when $N$ has been repeated enough times $m$ such that $mN$ is the smallest multiple of $C_0$.
+The hash index of 1 will only return to the first meta-column when the sequence $\{1, \ldots, N\}$ has been repeated enough times $m$ such that $mN$ is the smallest multiple of $C_0$.
 Prior to this, all assigned values of the first meta-column will be unique.
-This is obvious because non-unique values of the hash index would imply an existing repeating structure, which is not possible without repeating the hash index of 1.
+This is obvious because non-unique values of the hash index in the first meta-column would imply an existing repeating structure, which is not possible without repeating the hash index of 1.
 (The same logic can be applied to any other value of the hash index in any other meta-column.)
 
 As the number of rows covered by $mN$ is equal to $mN/C_0$, we simply need to choose $N$ such that $mN/C_0 \ge R_0$.
-This ensures that the hash index can never repeat itself for a given meta-column before the entire matrix is assigned with hash indices.
+This ensures that the hash index can never repeat itself for a given meta-column before hash indices are assigned to all entries in the meta-matrix.
 The most direct approach is to set $N$ to the smallest multiple of $C_0$ plus 1 that is greater than $R_0$.
-This guarantees that the lowest common multiple of $N$ and $C_0$ is their product, and that $mN/C$ is greater than $R_0$.
+This guarantees that the lowest common multiple of $N$ and $C_0$ is their product, and that $mN/C_0 \ge R_0$.
 
 \end{document}
