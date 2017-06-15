@@ -97,39 +97,41 @@ dev.off()
 ##############################
 # Making HDF5 plots.
 
-incoming <- read.table("../timings_hdf5_col.txt", header=TRUE)
+incoming <- read.table("../timings_hdf5_col.txt", header=TRUE, sep="\t")
+incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (column)", "HDF5 (rectangle)")) 
 incoming$Ncells <- incoming$Ncells/1e3
 
 pdf("HDF5_col_ncol.pdf")
-plotter(incoming, "Ncells", c("red", "black"), pch=c(18, 16), xlab=expression("Number of rows ("*10^3*")"), main="Column access", cex.axis=1)
+plotter(incoming, "Ncells", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), main="Column access", cex.axis=1)
 dev.off()
 
-incoming <- read.table("../timings_hdf5_row.txt", header=TRUE)
+incoming <- read.table("../timings_hdf5_row.txt", header=TRUE, sep="\t")
+incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (row)", "HDF5 (rectangle)")) 
 incoming$Ngenes <- incoming$Ngenes/1e3
 
 pdf("HDF5_row_nrow.pdf")
-plotter(incoming, "Ngenes", c("red", "black"), pch=c(18, 16), xlab=expression("Number of columns ("*10^3*")"), main="Row access", cex.axis=1, loc=NA)
+plotter(incoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of rows ("*10^3*")"), main="Row access", cex.axis=1)
 dev.off()
 
 # Layout type.
 
 incoming <- read.table("../timings_hdf5_col_layout.txt", header=TRUE, sep="\t")
 incoming <- incoming[-grep("uncompressed", incoming$Type),]
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rechunked")) 
+incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rectangular chunks")) 
 
 pdf("HDF5_col_layout.pdf")
-plotter(incoming, "Ncells", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), lty=c(1,1,2,2),
+plotter(incoming, "Ncells", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), 
         xlab="Number of columns", main="Column access", cex.axis=1, upper=50000)
 dev.off()
 
 incoming <- read.table("../timings_hdf5_row_layout.txt", header=TRUE, sep="\t")
 incoming <- incoming[-grep("uncompressed", incoming$Type),]
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Row chunks", "Column chunks", "Rechunked")) 
+incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rectangular chunks")) 
 incoming$Time <- incoming$Time/1e3
 
 pdf("HDF5_row_layout.pdf")
-plotter(incoming, "Ngenes", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), lty=c(1,1,2,2),
-        xlab="Number of rows", main="Row access", cex.axis=1, upper=100, ylab="Time (s)", yaxt="n")
+plotter(incoming, "Ngenes", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), 
+        xlab="Number of rows", main="Row access", cex.axis=1, ylab="Time (s)", yaxt="n", loc=NA)
 ticks <- c(10^(-2:2))
 axis(2, at=ticks, ticks)
 dev.off()
