@@ -50,48 +50,34 @@ dev.off()
 incoming <- read.table("../timings_sparse_col.txt", header=TRUE)
 incoming$Ncells <- incoming$Ncells/1e3
 incoming$Density <- incoming$Density * 100
+incoming$Type <- factor(incoming$Type, c("simple", "sparse", "RcppArmadillo"))
 
 pdf("sparse_col_density.pdf")
 subincoming <- incoming[incoming$Ncells==1,]
-plotter(subincoming, "Density", c("grey70", "black", "red"), pch=c(18, 16, 17), xlab="Density (%)", loc="bottomright")
+plotter(subincoming, "Density", c("black", "red", "grey70"), pch=c(16, 17, 18), xlab="Density (%)", loc="bottomright")
 dev.off()
 
 pdf("sparse_col_ncol.pdf")
 subincoming <- incoming[incoming$Density==1,]
-plotter(subincoming, "Ncells", c("grey70", "black", "red"), pch=c(18, 16, 17), xlab=expression("Number of columns ("*10^3*")"), loc=NA)
+plotter(subincoming, "Ncells", c("black", "red", "grey70"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), loc=NA)
 dev.off()
 
 # By row.
 
-incoming <- read.table("../timings_sparse_row.txt", header=TRUE)
+incoming <- read.table("../timings_sparse_row.txt", header=TRUE, stringsAsFactors=FALSE)
 incoming$Ngenes <- incoming$Ngenes/1e3
 incoming$Density <- incoming$Density * 100
-incoming <- incoming[incoming$Type!="arma",]
+incoming <- incoming[incoming$Type!="RcppArmadillo",]
+incoming$Type <- factor(incoming$Type, c("simple", "sparse", "naive"))
 
 pdf("sparse_row_density.pdf")
 subincoming <- incoming[incoming$Ngenes==10,]
-plotter(subincoming, "Density", c("black", "red"), pch=c(16, 17), xlab="Density (%)")
+plotter(subincoming, "Density", c("black", "red", "blue"), pch=c(16, 17, 15), xlab="Density (%)")
 dev.off()
 
 pdf("sparse_row_nrow.pdf")
 subincoming <- incoming[incoming$Density==1,]
-plotter(subincoming, "Ngenes", c("black", "red"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
-dev.off()
-
-# By access pattern.
-
-incoming <- read.table("../timings_sparse_row_naive.txt", header=TRUE)
-incoming$Ngenes <- incoming$Ngenes/1e3
-incoming$Density <- incoming$Density * 100
-
-pdf("sparse_row_naive_density.pdf")
-subincoming <- incoming[incoming$Ngenes==10,]
-plotter(subincoming, "Density", c("red", "blue"), pch=c(17, 15), lty=c(2, 2), xlab="Density (%)")
-dev.off()
-
-pdf("sparse_row_naive_nrow.pdf")
-subincoming <- incoming[incoming$Density==1,]
-plotter(subincoming, "Ngenes", c("red", "blue"), pch=c(17, 15), lty=c(2,2), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+plotter(subincoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 15), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
 dev.off()
 
 ##############################
