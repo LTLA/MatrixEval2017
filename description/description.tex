@@ -313,9 +313,8 @@ Compression of data in the HDF5 file also ensures that the on-disk footprint rem
 
 The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
 This means that even very large data sets can be accessed in C++, using the same code for simple and sparse matrix representations.
-However, access is necessarily slower than that from a simple matrix as the data need to be read from disk at regular intervals.
+However, data access is inevitably slower than that from a simple matrix as the data need to be read from disk at regular intervals.
 We observed a 20-fold increase in the time required to access each column and a 40-fold increase in the time required to access each row (Figure~\ref{fig:hdf5time}).
-(Column and row access timings were obtained with compressed column- and row-wise chunk layouts, respectively, which are discussed in more detail below.)
 This suggests that the \code{HDF5Matrix} representation should be used sparingly -- if possible, smaller data sets should use alternative in-memory representations for faster access.
 
 \begin{figure}[bt]
@@ -339,42 +338,17 @@ A key determinant of the performance of the \code{HDF5Matrix} representation is 
 There are two layout choices for large matrices: contiguous or chunked.
 In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of simple matrices in memory.
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
-For example, in a row-chunked layout, each chunk would only contain consecutive values from the same row of a matrix, i.e., chunks are nested within each row.
-Similarly, with column-wise chunking, each chunk would be nested within a column.
+For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
 Each chunk is always read (or written) in its entirety, even when only a portion of the chunk is requested.
-Chunking is required for compression on disk, and more importantly, for fast access to data -- \textit{provided that the layout is consistent with the expected access pattern}.
+The data in each chunk can also be compressed to reduce the file size.
 
-We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
-For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
-The contiguous layout is the fastest as only one disk read needs to be performed per column (Figure~\ref{fig:hdf5layout}).
-Column-wise chunking also involves a single disk read per column, but is slower due to the overhead of decompression and chunk caching.
-Row-wise chunking is the slowest because access to a single column involves a disk read for every row chunk in its entirety, i.e., $N_r$ reads in total.
-In fact, it is faster to convert (i.e., ``rechunk'') the entire data set to a column-wise chunk layout prior to performing column accesses via \beachmat{}.
-
-\begin{figure}[bt]
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_col_layout.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_layout.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Column/row access times for HDF5-backed matrices with different HDF5 file layouts, i.e., contiguous, row- or column-chunking with compression, and rechunking from one chunk layout to the optimal layout for each access pattern. 
-        (a) Column access time with respect to increasing number of columns, for a dense matrix with 1000 rows.
-        (b) Row access time with respect to increasing number of rows, for a dense matrix with 100 columns.
-        Horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:hdf5layout}
-\end{figure}
-
-For row access, row-wise chunking is the layout that provides the best performance with \beachmat{} (Figure~\ref{fig:hdf5layout}).
-This is expected as only one disk read is required per row, compared to multiple reads with column-wise chunking.
-(Again, rechunking to a row-wise layout is faster than perservering with a suboptimal column-wise layout for row access.)
-The performance of the contiguous layout is poor as multiple reads are required to access the non-contiguous data from each row.
-These results highlight the need to carefully choose a file layout that reflects the intended access pattern for optimal performance in C++ (and R) code.
-Analysis pipelines should also be arranged such that steps requiring column access are separated from those requiring row access.
-This minimizes the number of rechunking steps that need to be performed between steps.
+Chunking is required for fast access to data, \textit{provided that the layout is consistent with the expected access pattern}.
+For example, row-chunking allows fast access to each row, as only one read is required to obtain the chunk for each row.
+However, access to any given column is very slow, as the value of each element in the column must be obtained by performing a disk read for every row chunk in its entirety, i.e., $N_r$ reads in total.
+In practice, both row and column accesses are often required (e.g., to access gene- and cell-level data), which means that the HDF5 file layout must be carefully chosen to allow for these orthogonal access patterns.
+We suggest using rectangular chunks that are proportional to the full size of the matrix.
+We also dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
+This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figure~X, Additional Note~2).
 
 As previously mentioned, chunking of the HDF5 file allows for compression of data using filters such as ZLIB and SZIP.
 This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
