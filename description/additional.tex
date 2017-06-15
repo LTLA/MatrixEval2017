@@ -1,96 +1,150 @@
 \documentclass{article}
 \usepackage{amsmath}
+\usepackage[margin=3cm]{geometry}
 
-\title{On the specification of chunk dimensions for optimal consecutive row/column access}
-\author{Aaron Lun}
+\begin{document}
+
+\begin{titlepage}
+\vspace*{3cm}
+\begin{center}
+
+
+{\LARGE
+beachmat: a C++ API for data access from R matrix types
+\par}
+
+\vspace{0.75cm}
+
+{\Large
+    \textsc{Supplementary Materials}
+\par
+}
+\vspace{0.75cm}
+
+\large
+by
+
+
+\vspace{0.75cm}
+Aaron T. L. Lun$^1$
+
+\vspace{1cm}
+\begin{minipage}{0.9\textwidth}
+\begin{flushleft}
+$^1$Cancer Research UK Cambridge Institute, University of Cambridge, Li Ka Shing Centre, Robinson Way, Cambridge CB2 0RE, United Kingdom \\[6pt]
+\end{flushleft}
+\end{minipage}
+
+\vspace{1.5cm}
+{\large \today{}}
+
+\vspace*{\fill}
+\end{center}
+\end{titlepage}
 
 \providecommand{\myceil}[1]{\left \lceil #1 \right \rceil }
 
-\begin{document}
-\maketitle
+\section{Optimizing HDF5 chunk cache parameters}
 
-\section*{Overview}
-I will assume that the reader is familiar with the concept of chunking and the chunk cache in HDF5.
-(See Section 3 of https://support.hdfgroup.org/HDF5/doc/ADGuide/TechNote-HDF5-ImprovingCompressionPerformance.pdf for an overview.)
-Briefly, matrix data in HDF5 files can be partitioned into chunks, where each chunk is a submatrix of the same size.
+\subsection{Overview}
+Matrix data in HDF5 files can be partitioned into chunks \cite{hdf5chunk}, where each chunk is a submatrix of the same dimensions.
 When a particular row or column of the matrix is requested, the HDF5 library will read all chunks that are overlapped by the requested row/column.
 Each chunk is read from disk in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
-To reduce the impact on performance, chunks are cached in memory so that they do not have to be read again if a neighbouring row/column (overlapping the same set of chunks) is requested.
-This offers some opportunities for optimization when access to consecutive row/columns is requested.
+This is wasteful as more data needs to be processed than is required for the current request.
+To improve performance, chunks are cached in memory once they are read.
+This means that they do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
+We can tune the parameters of the HDF5 chunk cache to improve access to consecutive row/columns.
 
-\section*{Choosing the chunk dimensions}
+\subsection{Selecting the size of the chunk cache}
 Assume that we have a chunk cache of size $S$ (in terms of data values; this will have to be multiplied by the size in bytes of each value to obtain the actual cache size).
 Denote the number of rows and columns of our matrix as $R$ and $C$, respectively. 
-Let the number of rows and columns of each chunk be $P$ and $Q$, respectively.
-The optimal chunk dimensions are chosen such that all chunks covered by any given row or column can simultaneously fit into the cache, i.e., 
-\begin{align*}
-    P N_Q &\le S \quad\mbox{and}\\
-    Q N_P &\le S \;,
-\end{align*}
-where $N_Q$ and $N_P$ are the smallest multiples of $Q$ and $P$ that are greater than or equal to $C$ and $R$, respectively.
-We need to consider multiples as space is allocated for chunks in their entirety, even at the right/bottom edges of the matrix where each chunk may not be completely filled.
+We further assume that this data are stored in a chunked layout, where the number of rows and columns in each chunk is $P$ and $Q$, respectively.
 
-For example, say that we have a matrix $X$ with 20000 rows and 50000 columns.
-Further assume that we have a chunk cache that can store 10 million values.
-The ideal size of $P$ would be $10^7/50000 = 200$, while the ideal size of $Q$ would be $10^7/20000 = 500$.
-When reading any single column, we would load in $20000/P = 100$ chunks, which would constitute $200 \times 500 \times 100 = 10^7$ data values that can fit in the cache simultaneously.
-Similarly, when reading any row, we would load in $50000/Q = 100$ chunks, which also fits into the cache.
+The chunk size $S$ should be chosen so that it can hold all chunks lying across a row or column.
+Each chunk contains $PQ$ values, and each row and column overlaps $\myceil{C/Q}$ and $\myceil{R/P}$ chunks, respectively.
+This reflects the fact that each chunk is stored in its entirety, even at the right/bottom edges of the matrix where each chunk may not be completely filled.
+For row access, this means that 
+\begin{equation}
+S \ge \myceil{C/Q}PQ \;, 
+\end{equation}
+i.e., all chunks overlapping a particular row are held in memory. Simliarly, for column access, 
+\begin{equation}
+S \ge \myceil{R/P}PQ \;.
+\end{equation}
+This ensures that all chunks overlapping a particular row or column are retained in memory.
+Otherwise, if the cache size is too small, existing chunks in the cache will be evicted before the current row or column is fully read.
+(By default, the HDF5 chunk cache operates on a first-in-first-out basis when full.)
+This would preclude the use of the cache to rapidly load data for the next row or column.
 
-\section*{Choosing the cache size}
-The number of disk reads involved in accessing each row is equal to the number of chunks across a row of the matrix, i.e., $\myceil{C/Q}$.
-Once these are loaded into the cache, no more reads are required to access the next $P-1$ rows, i.e., data are read in for all $P$ rows simultaneously.
-In comparison, a file layout containing pure row chunks (i.e., each chunk is an entire row) would require $P$ reads to access the same data.
-Thus, for consecutive access, it is possible to perform as well as or better than a purely row-chunked layout if $\myceil{C/Q} \le P$.
-
-Similarly, the number of reads involved in accessing each column is $\myceil{R/P}$, and hold data for all $Q$ columns.
-A file layout containing pure column chuhnks would require $Q$ reads to access the same data.
-Thus, if $\myceil{R/P} \le Q$, we can also outperform the column-chunked layout for consecutive access.
-
-These results suggest an avenue for choosing the size of the cache $S$ to perform equivalently to pure row- and column-chunking.
-For simplicity, we will assume that $R$ is a multiple of $P$, $C$ is a multiple of $Q$, and $S$ is a multiple of $R$ and $C$.
-This means that we must satisfy the following inequalities:
-\begin{align*}
-    PC &\le S \\
-    QR &\le S \\
-    C/Q &\le P \\ 
-    R/P &\le Q 
-\end{align*}
-This is possible when $S^2 \ge R^2C$ and $S^2 \ge RC^2$.
-Or more succinctly, $S$ must be greater than the product of the larger dimension and the square root of the smaller dimension.
-When the assumptions of multiplicity do not apply, these inequalities may have to be solved numerically, but the principle stands.
-
-To illustrate, let us return to our matrix $X$.
-Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ to optimize row and column access.
-We will round up to $S=8000000$ to preserve the multiplicity assumption.
-This suggests that our chunk sizes should be $P = S/50000 = 160$ and $Q = S/20000 = 400$.
-In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
-
-\section*{Choosing the number of slots}
+\subsection{Choosing the number of slots}
 The chunk cache works by hashing the chunks according to their location in a one-dimensional array.
 Consider a ``meta-matrix'' of chunks, where each chunk in the original matrix constitutes one entry in the meta-matrix.
-A meta-row consists of all chunks along one row of this meta-matrix; the equivalent principle applies for the meta-columns.
+A meta-row consists of all chunks along one row of this meta-matrix.
+Similarly, a meta-column consists of all chunks along one column of the meta-matrix. 
 Denote the number of meta-rows and meta-columns as $R_0$ and $C_0$, respectively.
-Now, let us flatten the meta-matrix into a one-dimensional array of chunks, organized in row-major format.
+Now, flatten the meta-matrix into a one-dimensional array of chunks, organized in row-major format.
 The first chunk is assigned a hash index of 1 (technically 0, but we will use 1-based indexing for simplicity here).
 The next chunk is assigned a hash index of 2, and so on.
-When the hash index exceeds the number of cache slots $N$, the index is reset to 1 for the next chunk.
-This process continues until all entries of the meta-matrix are assigned to a hash index.
+When the hash index exceeds the number of cache slots $N$, it is reset to 1 for the next chunk.
+This continues until a hash index is assigned to all entries of the meta-matrix.
 
-The hash indices are important as two chunks with the same hash index cannot exist at the same time in the chunk cache.
+The hash indices are important as two chunks with the same hash index cannot co-exist in the chunk cache.
 This means that $N$ must be carefully chosen to ensure that all chunks in a meta-row or a meta-column have unique hash indices.
-Otherwise, an existing chunk in the cache will be evicted by a newer chunk with the same hash index, requiring the re-reading of the data in the former when accessing the next row/column.
-For a meta-row, this is trivial as $N$ only needs to be chosen to be greater than or equal to $C_0$.
-However, for a meta-column, some more thought is required.
+Otherwise, an existing chunk in the cache will be evicted by a newer chunk with the same hash index.
+This would require the re-reading of the data in the older chunk when accessing the next row/column, defeating the purpose of the cache.
+For a meta-row, guaranteeing unique indices is trivial as $N$ only needs to be chosen to be greater than or equal to $C_0$.
 
-Let us consider the first chunk, lying in the first meta-column with a hash index of 1.
+For a meta-column, more care is required.
+Consider the first chunk lying in the first meta-column with a hash index of 1.
 The hash index of 1 will only return to the first meta-column when the sequence $\{1, \ldots, N\}$ has been repeated enough times $m$ such that $mN$ is the smallest multiple of $C_0$.
 Prior to this, all assigned values of the first meta-column will be unique.
 This is obvious because non-unique values of the hash index in the first meta-column would imply an existing repeating structure, which is not possible without repeating the hash index of 1.
 (The same logic can be applied to any other value of the hash index in any other meta-column.)
-
 As the number of rows covered by $mN$ is equal to $mN/C_0$, we simply need to choose $N$ such that $mN/C_0 \ge R_0$.
 This ensures that the hash index can never repeat itself for a given meta-column before hash indices are assigned to all entries in the meta-matrix.
-The most direct approach is to set $N$ to the smallest multiple of $C_0$ plus 1 that is greater than $R_0$.
+The most direct approach is to set $N = kC_0 + 1$  where $k \in \mathbf{N}^+$ and $kC_0 +1 \ge R_0$.
 This guarantees that the lowest common multiple of $N$ and $C_0$ is their product, and that $mN/C_0 \ge R_0$.
+
+\subsection{Choosing the chunk dimensions}
+The preceding text assumes that the chunk dimensions $P$ and $Q$ were set beforehand.
+This is the case for existing HDF5 files, where the chunk layout must be specified during data set creation.
+However, for new files, we have an opportunity to choose the chunk dimensions to optimize data access.
+
+The number of disk reads involved in accessing each row is equal to the number of chunks across a row of the matrix, i.e., $\myceil{C/Q}$.
+Once these are loaded into the cache, no more reads are required to access the next $P-1$ rows, i.e., data are held in memory for all $P$ rows simultaneously.
+For comparison, consider a layout containing row chunks, i.e., each chunk is an entire row.
+This provides the most efficient access to any single row as one read obtains all and only that row's data.
+To access $P$ rows from a row-chunked layout, $P$ reads would be required.
+Thus, for accessing consecutive rows with $P \times Q$ chunks, it is possible to perform as well as or better than the row-chunked layout if 
+\begin{equation}
+\myceil{C/Q} \le P \;.
+\end{equation}
+The same logic applies to column access, where $\myceil{R/P}$ reads are required to store data for $Q$ consecutive columns.
+A layout with pure column chunks would require $Q$ reads to access the same data.
+If 
+\begin{equation}
+\myceil{R/P} \le Q \;,
+\end{equation}
+we can also outperform the column-chunked layout for accessing data in consecutive columns.
+Thus, by choosing $P$ and $Q$ to satisfy Inequalities~3 and 4, we can use a single file layout to achieve data access performance similar to or better than that of pure column- or row-based chunking.
+
+Obviously, any arbitrarily large $P$ and $Q$ will satisfy Inequalities~3 and 4.
+To avoid this, we use Inequalities~1 and 2 to determine the minimum chunk cache size.
+The aim is to satisfy all of the inequalities while minimizing $S$ to reduce the memory overhead.
+In general, this requires some numerical analysis to account for the discrete nature of the dimensions.
+We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $S \ge \max\{R\sqrt{C}, C\sqrt{R}\}$.
+Once the smallest $S$ is obtained, the largest $P$ and $Q$ are easily determined.
+
+\subsection{Worked example of choosing chunk settings}
+Say that we have a matrix $X$ with 20000 rows and 50000 columns.
+Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ to optimize row and column access.
+We set $S=8000000$ to simplify the later divisions, which corresponds to a in-memory space of 64 MB.
+Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
+In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
+
+
+\small
+\bibliography{ref}
+\bibliographystyle{unsrt}
 
 \end{document}
