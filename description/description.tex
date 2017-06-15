@@ -378,13 +378,11 @@ These results demonstrate that the strengths and weaknesses of the different rep
         \caption{}
     \end{subfigure}
     \caption{Access times for various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
-        (a) Column access time for each representation, based on calculation of column sums.
-        HDF5: column-chunked \code{HDF5Matrix},
-        rechunk: row-chunked \code{HDF5Matrix} converted to a column-chunked layout.
+        (a) Column access time for each representation.
+        For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
         (b) Row access time for each representation, based on calculation of row sums.
-        HDF5: row-chunked \code{HDF5Matrix},
-        rechunk: column-chunked \code{HDF5Matrix} converted to a row-chunked layout.
-        Heights represent the average of 10 repeats; standard errors were negligible and not shown.
+        For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
+        Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
     }
     \label{fig:zeisel}
 \end{figure}
