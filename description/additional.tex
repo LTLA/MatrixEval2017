@@ -167,8 +167,8 @@ We emphasize that rectangular chunking is only slightly slower than row-wise chu
 This highlights the utility of rectangular chunks for both row and column accesses, compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
 The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
 
-It should be stressed that these timings were performed using consecutive row and column accesses.
-The chunk cache ceases to be effective for a random access pattern, as there is no guarantee that the cached data will be contain the next requested row or column.
+It should be stressed that these timings were generated with consecutive row and column accesses.
+The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will be contain the next requested row or column.
 (We omit the situation where the entire matrix is loaded into the cache.
 If this were possible, a simple matrix representation would have sufficed.)
 In such cases, pure row- or column-based chunks may be necessary for optimal performance.
@@ -176,6 +176,46 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 \small
 \bibliography{ref}
 \bibliographystyle{unsrt}
+
+\newpage
+\begin{figure}[bt]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_col.pdf}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_row.pdf}
+        \caption{}
+    \end{subfigure}
+    \caption{Time required for column or row access of simple matrices using the \beachmat{} or \textit{Rcpp} APIs.
+        (a) Column access time with respect to the number of columns, for a matrix with 10000 rows.
+        (b) Row access time with respect to the number of rows, for a matrix with 1000 columns.
+%        Access was timed after computing the column/row sums to ensure iteration with each API.
+%        Each time represents the average of 10 simulations.
+%        Standard errors were negligible and are not shown.
+        Intervals between the horizontal dotted lines represent 2-fold increases in time.
+    }
+    \label{fig:basetime}
+\end{figure}
+
+\begin{figure}[bt]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_density.pdf}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_ncol.pdf}
+        \caption{}
+    \end{subfigure}
+    \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo}, compared to an equivalent simple matrix with \beachmat{} (simple).
+        (a) Access times with respect to the density of non-zero entries as a percentage of all entries, for a matrix with 10000 rows and 1000 columns.
+        (b) Access times with respect to the number of columns, for a matrix with 10000 rows and 1\% density.
+        Horizontal dotted lines represent 2-fold increases in time.
+    }
+    \label{fig:sparsecol}
+\end{figure}
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
@@ -188,8 +228,8 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
     \end{subfigure}
     \caption{Column/row access times of \beachmat{} for \code{HDF5Matrix} objects constructed with different HDF5 file layouts, 
         i.e., contiguous, row- or column-chunking, or $40\times40$ rectangular chunks.
-        (a) Column access time with respect to increasing number of columns, for a dense matrix with 1000 rows.
-        (b) Row access time with respect to increasing number of rows, for a dense matrix with 100 columns.
+        (a) Column access times with respect to the number of columns, for a dense matrix with 1000 rows.
+        (b) Row access times with respect to the number of rows, for a dense matrix with 100 columns.
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5layout}

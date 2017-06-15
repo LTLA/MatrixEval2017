@@ -77,6 +77,13 @@
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
 
+\newcommand{\suppfigsimpleaccess}{1}
+\newcommand{\suppfigsparsecol}{2}
+\newcommand{\suppfighdflayout}{3}
+
+\newcommand{\suppseclayoutoptim}{1}
+\newcommand{\suppseclayouttest}{2}
+
 % document begins here
 \begin{document}
 \vspace*{0.35in}
@@ -169,7 +176,7 @@ This includes the details of each matrix representation, its memory footprint an
 By default, R stores matrices as one-dimensional arrays of length $N_rN_c$, where $N_r$ and $N_c$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(x, y)$ corresponds to array element $x + N_ry$ (assuming zero-based indexing).
 We refer to this format as a ``simple matrix''.
-The simple matrix is easy to manipulate and the time required for data access is linear with respect to the number of rows/columns (Figure~\ref{fig:basetime}).
+The simple matrix is easy to manipulate and the time required for data access is linear with respect to the number of rows/columns (Supplementary Figure~\suppfigsimpleaccess{}).
 However, its memory footprint is directly proportional to its length.
 For example, a double-precision matrix containing data for 10000 genes in each of one million cells would require 80 GB of RAM to store in memory.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
@@ -179,32 +186,11 @@ Thus, the utility of simple matrices is limited to relatively small scRNA-seq da
 % While R doesn't copy if you don't modify, it _does_ copy if you do modify, rather tha overwriting the old version.
 % Consider computing log2-normalized counts; it's four copies (first transpose, division, second transpose, log-transformation).
 
-\begin{figure}[bt]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_col.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_row.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Time required for column or row access of simple matrices using the \beachmat{} or \textit{Rcpp} APIs.
-        (a) Column access time with respect to increasing number of columns, for a matrix with 10000 rows.
-        (b) Row access time with respect to increasing number of rows, for a matrix with 1000 columns.
-        Access was timed after computing the column/row sums to ensure iteration across data values with each API.
-        Each time represents the average of 10 simulations.
-        Standard errors were negligible and are not shown.
-        Intervals between the horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:basetime}
-\end{figure}
-
 We compare the access speed of the \beachmat{} API to that of a reference implementation using only \textit{Rcpp}.
-Both row and column access via \beachmat{} require 20-50\% more time compared to the reference (Figure~\ref{fig:basetime}).
+Both row and column access via \beachmat{} require 20-50\% more time compared to the reference (Supplementary Figure~\suppfigsimpleaccess{}).
 This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former cannot be faster than the latter.
 Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector}.
-In contrast, the reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
+The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
 Our use of copying is deliberate as it simplifies the API and keeps it consistent across matrix representations. 
 Iterating across the original data is complicated for sparse matrices (due to lack of memory locality) and impractical for file-based representations.
 Moreover, copying is required anyway for complex operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
@@ -226,7 +212,7 @@ For double-precision matrices with many rows, sparse matrices will be more memor
 
 The CSC format simplifies data access by imposing structure on the non-zero entries.
 When accessing a particular column $c$, all corresponding entries in $G_c$ can be quickly extracted by taking the relevant part of the ordered sequence.
-For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Figure~\ref{fig:sparsecol}).
+For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\suppfigsparsecol{}).
 This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
 As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
 We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also handles sparse matrices via the \code{SpMat} class.
@@ -237,31 +223,13 @@ This provides faster column-level access than the \beachmat{} API as no copying 
 % If you only iterate over the non-zero entries, you would get highly efficient algorithms for simple operations.
 % However, this is not palatable as it means you have to write one version of the code for sparse matrices and another version for dense matrices.
 
-\begin{figure}[bt]
-    \centering
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_density.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_ncol.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo} (arma), compared to access times for an equivalent simple matrix with \beachmat{} (dense).
-        (a) Access times with respect to increasing density of non-zero entries (as a percentage of all entries), for a matrix with 10000 rows and 1000 columns.
-        (b) Access times with respect to increasing number of columns, for a matrix with 10000 rows and 1\% non-zero entries.
-        Horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:sparsecol}
-\end{figure}
-
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
 If a row is requested, a binary search on $x$ needs to be performed within $G_y$ for each column $y$, which requires an average time proportional to $\log(N_r)$.
 In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $N_r$ elements ahead on the one-dimensional array.
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
 If row $r$ is accessed, \beachmat{} will loop over all columns and cache the index the first value of $x$ in $G_y$ that is not less than $r$.
 When $r+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
-This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}a, b).
+This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}).
 Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search; if less, we use the indices to set the end of the search. 
 This reduces the search space and the amount of computational work for large $N_r$.
@@ -272,14 +240,6 @@ This reduces the search space and the amount of computational work for large $N_
 
 \begin{figure}[btp]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_naive_density.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_naive_nrow.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_density.pdf}
         \caption{}
     \end{subfigure}
@@ -287,18 +247,19 @@ This reduces the search space and the amount of computational work for large $N_
         \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Row access times for CSC matrices using a naive binary search or the improved caching method in \beachmat{} (a, b); and in comparison to an equivalent simple matrix in \beachmat{} (dense) (c, d).
-        (a, c) Access times with respect to increasing density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
-        (b, d) Access times with respect to increasing number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
+    \caption{Row access times for CSC matrices using a naive binary search or the improved caching method in \beachmat{}.
+        For reference, access time for an equivalent simple matrix in \beachmat{} (simple) is also shown.
+        (a) Access times with respect to the density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
+        (b) Access times with respect to the number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:sparserow}
 \end{figure}
 
 
-Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with simple matrices (Figure~\ref{fig:sparserow}c).
+Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with simple matrices (Figure~\ref{fig:sparserow}a).
 This is not surprising as there is simply less work to do with dense matrices.
-The exception is with large matrices of low density (Figure~\ref{fig:sparserow}d), where the cost of CPU cache misses due to large jumps exceeds the cost of handling both $x$ and $v$ per non-zero entry.
+The exception is with large matrices of low density (Figure~\ref{fig:sparserow}b), where the cost of CPU cache misses due to large jumps exceeds the cost of handling both $x$ and $v$ per non-zero entry.
 Row access of either representation with \beachmat{} is also faster than that of sparse matrices with \textit{RcppArmadillo}.
 For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for data access from sparse matrices.
@@ -326,9 +287,10 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
         \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Column and row access times for a HDF5-backed matrix.
-        (a) Column access time with respect to increasing number of columns, for a dense matrix with 10000 rows.
-        (b) Row access time with respect to increasing number of rows, for a dense matrix with 1000 columns.
+    \caption{Access times for a HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks.
+        Times for a simple matrix are shown for comparison.
+        (a) Column access time with respect to the number of columns, for a dense matrix with 10000 rows.
+        (b) Row access time with respect to the number of rows, for a dense matrix with 1000 columns.
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5time}
@@ -348,7 +310,7 @@ However, access to any given column is very slow, as the value of each element i
 In practice, both row and column accesses are often required (e.g., to access gene- and cell-level data), which means that the HDF5 file layout must be carefully chosen to allow for these orthogonal access patterns.
 We suggest using rectangular chunks that are proportional to the full size of the matrix.
 We also dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
-This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figure~X, Additional Note~2).
+This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figure~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
 
 As previously mentioned, chunking of the HDF5 file allows for compression of data using filters such as ZLIB and SZIP.
 This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
@@ -447,28 +409,10 @@ This means that each API has to do some work, avoiding trivially fast approaches
 Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
 
 Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
-This was repeated 10 times with new matrices, and the average time and standard error was computed for each access method. 
-Row and column access times were evaluated with respect to increasing numbers of rows and columns, respectively.
-For sparse matrices and to test the effects of HDF5 compression, results were also recorded with respect to increasing density of non-zero entries.
-
-\subsection*{Rechunking of the HDF5 file layout}
-We developed a simple yet efficient approach for converting between row-wise and column-wise chunking in a HDF5 file.
-Consider an existing file with chunk dimensions of $(p_1, 1)$ for $p_1$ rows and 1 column, i.e., column-wise chunking where each chunk contains $p_1$ values.
-Assume that we want to obtain a new file with chunk dimensions of $(1, p_2)$, i.e., row-wise chunks containing $p_2$ values.
-We load $p_2$ column-wise chunks from the original file into memory at once, and write them into a new file as $p_1$ row-wise chunks.
-This is repeated until all data are copied from the original to the new file.
-The reverse procedure can be performed to convert from row-wise chunks to column-wise chunks.
-
-Our rechunking approach minimizes the number of disk accesses by ensuring that each read/write processes all data from a single chunk.
-However, it assumes that the space required by $p_1p_2$ values is small enough to fit into memory. 
-This is usually not an issue, e.g., for $p_1=p_2=10^4$ with double-precision data, each read/write iteration would only require 800 MB of memory.
-In cases where $p_1$ is very large, it is possible to first convert to row-wise chunks of size $p'_2$ (where $p'_2$ is some factor of $p_2$) in an intermediate file.
-The intermediate file can then be easily processed into a new file containing row-wise chunks of size $p_2$, requiring only $p_2/p'_2$ chunks to be held in memory.
-
-For all procedures involving chunked HDF5 files, we used column- or row-wise chunks containing 5000 double-precision values.
-If any chunk dimension exceeded the corresponding dimension of the matrix, the chunk size was set to the exceeded dimension instead.
-We restricted ourselves to column- and row-wise chunks as these are optimal for access to any single column or row, respectively.
-Obviously, other layouts are possible but their performances will depend on other factors (e.g., the size of the chunk cache, the order of access of rows/columns) and will not be considered here.
+This was repeated 10 times with new matrices, and the average time and standard error were computed for each access method. 
+Row and column access times were evaluated with respect to the numbers of rows and columns, respectively.
+For sparse matrices, times were also recorded with respect to the density of non-zero entries.
+In all cases, standard errors were negligible and not plotted for brevity.
 
 \subsection*{Access timings with the brain data}
 scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex/}.
