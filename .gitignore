@@ -2,6 +2,7 @@
 *.pdf
 *.o
 *.so
+*.h5
 description.aux
 description.bbl
 description.blg
