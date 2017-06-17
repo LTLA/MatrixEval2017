@@ -159,7 +159,7 @@ It would clearly be preferable to implement critical functions, loops and all, i
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
 We define a base class that implements common methods for all matrix representations.
 Each specific representation is associated with a derived C++ class that provides customized implementations of the access methods.
-The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Figure X).
+The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Figure~\ref{fig:beachoverview}).
 A function is then called to produce its C++ equivalent, returning a pointer to the base class.
 This pointer is the same regardless of the R representation and can be used in downstream code to achieve run-time polymorphism.
 
@@ -171,6 +171,19 @@ A request for a specific entry of the matrix will directly return the correspond
 
 In the following text, we discuss some of the specifics of the \beachmat{} API implementation.
 This includes the details of each matrix representation, its memory footprint and the computational time required for data access.
+
+\begin{figure}[btp]
+    \begin{center}
+        \includegraphics[width=\textwidth]{pics/overview.pdf}
+    \end{center}
+    \caption{Schematic of the \beachmat{} workflow.
+        Various matrix representations at the R level are passed as \code{RObject} instances to a C++ function.
+        \beachmat{} identifies the specific representation, constructs an instance of the appropriate C++ derived class, and returns a pointer to base class.
+        (In this case, a \code{numeric\_matrix} pointer is returned for input matrices holding double-precision data.)
+        This pointer can then be used in user-level code in a manner that is agnostic to the details of the original representation.
+    }
+    \label{fig:beachoverview}
+\end{figure}
 
 \subsection*{Performance with simple matrices}
 By default, R stores matrices as one-dimensional arrays of length $N_rN_c$, where $N_r$ and $N_c$ are the number of rows and columns, respectively.
