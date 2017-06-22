@@ -154,6 +154,8 @@ Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
 \section{Performance of different HDF5 file layouts}
+
+\subsection{Testing with simulated data}
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
 For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
 The contiguous layout is the fastest as only one disk read needs to be performed per column (Supplementary Figure~\ref{fig:hdf5layout}).
@@ -167,11 +169,37 @@ We emphasize that rectangular chunking is only slightly slower than row-wise chu
 This highlights the utility of rectangular chunks for both row and column accesses, compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
 The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
 
+\subsection{Dealing with random access}
 It should be stressed that these timings were generated with consecutive row and column accesses.
 The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will be contain the next requested row or column.
 (We omit the situation where the entire matrix is loaded into the cache.
 If this were possible, a simple matrix representation would have sufficed.)
 In such cases, pure row- or column-based chunks may be necessary for optimal performance.
+However, the best layout is not clear at the time of file creation, especially for scRNA-seq data where it is sensible to access data by gene (row) or cell (column).
+Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
+
+We use a simple strategy to convert an existing chunked HDF5 file to a layout using row-based chunks.
+Consider an existing file with chunk dimensions of $(P_1, Q_1)$. 
+Assume that we want to obtain a new file with chunk dimensions of $(1, Q_2)$, i.e., row-wise chunks containing $Q_2$ values.
+We consider a stretch of $\myceil{Q_2/Q_1}$ chunks spanning the same $P_1$ rows. 
+These chunks are loaded from the original file into memory and written into a new file as $P_1$ row-wise chunks.
+This is repeated with the next stretch of chunks until all data are copied from the original to the new file.
+Similarly, to create column-wise chunks of size $P_2$, we consider the stretch of $\myceil{P_1/P_2}$ chunks spanning the same $Q_1$ columns.
+These are loaded into memory and written into a new file as $Q_1$ column-wise chunks.
+The idea is to load read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
+Disk reads/writes are minimized when $P_2$ and $Q_2$ are multiples of $P_1$ and $P_2$, respectively.
+
+Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).
+The time scales linearly with matrix size, so for a large data set with a million cells, it would take 2-3 hours.
+This is minor compared to the time spent by the entire analysis.
+Nonetheless, to maximize efficiency, all functions requiring column-based access (e.g., cell quality control and normalization) should be grouped together and executed first; 
+this should be followed by a layout conversion step, and then by execution of functions requiring row-based access (e.g., gene-based processing).
+An alternative option would be to store scRNA-seq data in both row- and column-chunked form (i.e., as two separate HDF5 data sets) to allow for both access patterns.
+While this has some uses, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
+Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and disk accesses must be performed twice.
+
+
+
 
 \small
 \bibliography{ref}
@@ -181,11 +209,11 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 \begin{figure}[bt]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_col.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/base_col.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/base_row.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/base_row.pdf}
         \caption{}
     \end{subfigure}
     \caption{Time required for column or row access of simple matrices using the \beachmat{} or \textit{Rcpp} APIs.
@@ -202,11 +230,11 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 \begin{figure}[bt]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_density.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_col_density.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_col_ncol.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_col_ncol.pdf}
         \caption{}
     \end{subfigure}
     \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo}, compared to an equivalent simple matrix with \beachmat{} (simple).
@@ -219,11 +247,11 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_col_layout.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_layout.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_layout.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_layout.pdf}
         \caption{}
     \end{subfigure}
     \caption{Column/row access times of \beachmat{} for \code{HDF5Matrix} objects constructed with different HDF5 file layouts, 
@@ -235,5 +263,23 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
     \label{fig:hdf5layout}
 \end{figure}
 
+\begin{figure}[bt]
+    \begin{subfigure}[bt]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_rechunk.pdf}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[bt]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_rechunk.pdf}
+        \caption{}
+    \end{subfigure}
+    \caption{Time required to convert from a column-based chunk layout to a row-based chunk layout, or vice versa.
+        Each chunk contained 5000 values along a single row or column (or set to the corresponding dimension of the matrix, if it was smaller than 5000).
+        Conversion times were recorded with respect to increasing number of (a) rows and (b) columns.
+        All values represent the mean of 10 simulation iterations.
+        Horizontal dotted lines represent 2-fold increases in time.
+    }
+    \label{fig:hdf5rechunk}
+\end{figure}
+        
 
 \end{document}
