@@ -122,4 +122,21 @@ ticks <- c(10^(-2:2))
 axis(2, at=ticks, ticks)
 dev.off()
 
+# Rechunking
+
+incoming <- read.table("../chunking/timings_rechunk_col.txt", header=TRUE, sep="\t")
+incoming$Ncells <- incoming$Ncells/1e3
+
+pdf("HDF5_col_rechunk.pdf")
+plotter(incoming, "Ncells", c("orange", "darkgreen"), pch=c(16, 17), lty=c(2,2), 
+        xlab=expression("Number of columns ("*10^3*")"), cex.axis=1)
+dev.off()
+
+incoming <- read.table("../chunking/timings_rechunk_row.txt", header=TRUE, sep="\t")
+incoming$Ngenes <- incoming$Ngenes/1e3
+
+pdf("HDF5_row_rechunk.pdf")
+plotter(incoming, "Ngenes", c("orange", "darkgreen"), pch=c(16, 17), lty=c(2,2), 
+        xlab=expression("Number of rows ("*10^3*")"), cex.axis=1, loc=NA)
+dev.off()
 
