@@ -60,7 +60,16 @@ int main (int argc, const char** argv) {
     hdata.close();
     hfile.openFile(argv[1], H5F_ACC_RDONLY, fapl);
     hdata=hfile.openDataSet("yyy");
-    
+
+    {
+        auto fapl2=hfile.getAccessPlist();
+        size_t s, b;
+        int m;
+        double w;
+        fapl2.getCache(m, s, b, w);
+        std::cout <<  m << ", " << s << ", " << b << ", " << w << std::endl;
+    }
+
     double total=0;
     H5::DataSpace colspace;
 
