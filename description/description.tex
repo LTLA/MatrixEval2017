@@ -402,7 +402,24 @@ These results demonstrate that the strengths and weaknesses of the different rep
     \label{fig:zeisel}
 \end{figure}
 
-\subsection*{Analysis of a large data set}
+\subsection*{Analysis of a very large-scale data set}
+To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{scater2017mccarthy} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
+We then applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
+First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computationalt}, 
+The vast majority of cells were identified as being in G1 phase, consistent with the presence of differentiated neurons that are not actively cycling.
+Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
+The size factor correlated well with the library size for each cell (Figure~Yb), with deviations caused by composition effects \cite{robinson2010scaling} due to differential expression between cell subpopulations.
+
+We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep},
+This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
+We identified a number of HVGs.
+Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized PCA.
+This showed clear substructure in the first two principal components (PCs), reflecting the diversity of cell types in the mouse brain.
+Indeed, once PCA has been performed, memory usage ceases to be a problem as the first 10-20 principal components for each cell and be stored in memory as a simple matrix.
+This allows other R packages to be used directly without any modification -- provided the underlying algorithms are scalable with the number of cells.
+
+While a full characterisation of this data set is outside the scope of this paper, it is clear that we can proceed through many parts of the scRNA-seq analysis pipeline using \beachmat{}-driven C++ functions.
+Downstream procedures such as clustering and identification of marker genes are left as exercises for interested developers.
 
 \section*{Discussion}
 % Some words about disappearing sparsity.
@@ -433,6 +450,11 @@ Counts were read into R and converted into a double-precision simple matrix, a \
 For each representation, timings of the calculation of row or column sums were performed as previously described.
 This was repeated 10 times to obtain an average time.
 Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
+
+\subsection*{Analysis of the 1 million neuron data set}
+We downloaded the 1 million neuron data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons}).
+We used the \textit{TENxGenomics} package to construct a \code{HDF5Matrix} of this data with column-based chunks.
+
 
 {\small
     \bibliography{ref}
