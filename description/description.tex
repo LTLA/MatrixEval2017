@@ -202,12 +202,12 @@ Thus, the utility of simple matrices is limited to relatively small scRNA-seq da
 We compare the access speed of the \beachmat{} API to that of a reference implementation using only \textit{Rcpp}.
 Both row and column access via \beachmat{} require 20-50\% more time compared to the reference (Supplementary Figure~\suppfigsimpleaccess{}).
 This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former cannot be faster than the latter.
-Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector}.
+Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector} by default.
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
-Our use of copying is deliberate as it simplifies the API and keeps it consistent across matrix representations. 
-Iterating across the original data is complicated for sparse matrices (due to lack of memory locality) and impractical for file-based representations.
+Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations must copy the data to a new location in memory.
 Moreover, copying is required anyway for complex operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
-This suggests that, in practice, \beachmat{}'s computational overhead can be ignored.
+Nonetheless, for read-only access to column data in a simple matrix, \beachmat{} can be directed to return an iterator directly to the start of the column.
+This avoids making a copy and allows for some optimization in certain scenarios.
 
 \subsection*{Performance with sparse matrices}
 The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format.
@@ -230,11 +230,6 @@ This is because only a few non-zero entries need to be copied -- the rest of the
 As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
 We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also handles sparse matrices via the \code{SpMat} class.
 This provides faster column-level access than the \beachmat{} API as no copying of data is performed -- see above for a related discussion with simple matrices.
-
-% A more fundamental point is that, if your data is highly sparse, you can design more efficient algorithms by just not iterating over the zeroes.
-% In contrast, RcppArmadillo still involves iteration over the zero values; it just doesn't do any copying of them.
-% If you only iterate over the non-zero entries, you would get highly efficient algorithms for simple operations.
-% However, this is not palatable as it means you have to write one version of the code for sparse matrices and another version for dense matrices.
 
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
 If a row is requested, a binary search on $x$ needs to be performed within $G_y$ for each column $y$, which requires an average time proportional to $\log(N_r)$.
@@ -276,6 +271,13 @@ The exception is with large matrices of low density (Figure~\ref{fig:sparserow}b
 Row access of either representation with \beachmat{} is also faster than that of sparse matrices with \textit{RcppArmadillo}.
 For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for data access from sparse matrices.
+
+We note that, for highly sparse data, it is possible to design efficient algorithms that avoid iterating over the zeroes.
+To accommodate this, \beachmat{} can be directed to return the indices and values of all non-zero elements in each row or column.
+In contrast, the default acccess methods will return all values of a row/column to keep the API consistent with other non-sparse representations.
+The user-level code can switch between different algorithms depending on whether the input matrix is sparse or dense.
+In general, we recommend this approach only for performance-critical parts of the code.
+Writing, testing and maintaining two different versions of the same code is a heavy burden on the developer, and precisely what the use of \beachmat{} was intended to avoid.
 
 \subsection*{Performance with HDF5-based matrices}
 For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
