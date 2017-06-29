@@ -204,8 +204,8 @@ Both row and column access via \beachmat{} require 20-50\% more time compared to
 This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former cannot be faster than the latter.
 Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector} by default.
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
-Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations must copy the data to a new location in memory.
-Moreover, copying is required anyway for complex operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
+Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in memory.
+Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
 Nonetheless, for read-only access to column data in a simple matrix, \beachmat{} can be directed to return an iterator directly to the start of the column.
 This avoids making a copy and allows for some optimization in certain scenarios.
 
@@ -248,11 +248,11 @@ This reduces the search space and the amount of computational work for large $N_
 
 \begin{figure}[btp]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_density.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_density.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/sparse_row_nrow.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_nrow.pdf}
         \caption{}
     \end{subfigure}
     \caption{Row access times for CSC matrices using a naive binary search or the improved caching method in \beachmat{}.
@@ -272,12 +272,13 @@ Row access of either representation with \beachmat{} is also faster than that of
 For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for data access from sparse matrices.
 
-We note that, for highly sparse data, it is possible to design efficient algorithms that avoid iterating over the zeroes.
+For highly sparse data, it is also possible to design efficient algorithms that completely avoid processing the zeroes.
 To accommodate this, \beachmat{} can be directed to return the indices and values of all non-zero elements in each row or column.
-In contrast, the default acccess methods will return all values of a row/column to keep the API consistent with other non-sparse representations.
+In contrast, the default acccess methods will return all values of a row/column.
+This ensures that the API is consistent with non-sparse representations but is time-wasting for operations where zeroes can be ignored.
 The user-level code can switch between different algorithms depending on whether the input matrix is sparse or dense.
 In general, we recommend this approach only for performance-critical parts of the code.
-Writing, testing and maintaining two different versions of the same code is a heavy burden on the developer, and precisely what the use of \beachmat{} was intended to avoid.
+Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
 
 \subsection*{Performance with HDF5-based matrices}
 For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
@@ -295,11 +296,11 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_col_ncol.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_ncol.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/simulations/pics/HDF5_row_nrow.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_nrow.pdf}
         \caption{}
     \end{subfigure}
     \caption{Access times for a HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks.
@@ -385,11 +386,11 @@ These results demonstrate that the strengths and weaknesses of the different rep
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/real/pics/zeisel_col.pdf}
+        \includegraphics[width=\textwidth]{../real/zeisel/pics/zeisel_col.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../timings/real/pics/zeisel_row.pdf}
+        \includegraphics[width=\textwidth]{../real/zeisel/pics/zeisel_row.pdf}
         \caption{}
     \end{subfigure}
     \caption{Access times for various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
@@ -403,16 +404,16 @@ These results demonstrate that the strengths and weaknesses of the different rep
 \end{figure}
 
 \subsection*{Analysis of a very large-scale data set}
-To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{scater2017mccarthy} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
+To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
 We then applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
-First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computationalt}, 
+First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
 The vast majority of cells were identified as being in G1 phase, consistent with the presence of differentiated neurons that are not actively cycling.
 Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
 The size factor correlated well with the library size for each cell (Figure~Yb), with deviations caused by composition effects \cite{robinson2010scaling} due to differential expression between cell subpopulations.
 
-We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep},
+We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
-We identified a number of HVGs.
+We identified a number of HVGs, including ...
 Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized PCA.
 This showed clear substructure in the first two principal components (PCs), reflecting the diversity of cell types in the mouse brain.
 Indeed, once PCA has been performed, memory usage ceases to be a problem as the first 10-20 principal components for each cell and be stored in memory as a simple matrix.
