@@ -453,9 +453,23 @@ This was repeated 10 times to obtain an average time.
 Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
 
 \subsection*{Analysis of the 1 million neuron data set}
-We downloaded the 1 million neuron data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons}).
-We used the \textit{TENxGenomics} package to construct a \code{HDF5Matrix} of this data with column-based chunks.
+We downloaded the 1 million neuron data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons}, obtained 15 June 2017).
+We used the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}) to compute metrics for each cell, including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
+Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median value for all cells in the same sequencing library.
+After filtering out the low-quality cells, we constructed a \code{HDF5Matrix} with column-based chunks using the \textit{HDF5Array} package.
 
+To call cell cycle phase, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
+This was performed over three cores to reduce computational time.
+To compute size factors, we used the \code{computeSumFactors} method after splitting the data set into chunks of 2000-3000 cells.
+Cells in each chunk were normalized using the deconvolution method \cite{lun2016pooling}, and size factors were calibrated across chunks by normalizing the chunk-specific pseudo-cells.
+Note that, for the purposes of normalization, we only used genes with an average count above 0.1 (as calculated by the \code{calcAverage} function in \textit{scater}).
+Size factors were then used to compute normalized log-expression values \cite{lun2016stepbystep}, which were represented in a new \code{HDF5Matrix} object.
+
+To identify highly variable genes, we used the \code{trendVar} and \code{decomposeVar} functions from \textit{scran}.
+We computed the variance of the normalized log-expression values for each gene while blocking on the sequencing library of origin.
+We fitted a mean-dependent trend to the variances to model the mean-variance relationship.
+Assuming that most genes were not highly variable, we tested whether the residual from the trend for each gene was significantly greater than zero.
+Highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
 
 {\small
     \bibliography{ref}
