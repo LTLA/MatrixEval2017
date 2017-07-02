@@ -350,8 +350,8 @@ In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
 \subsection*{Storing matrix output}
-In addition to accessing data in existing matrices, the \beachmat{} API also supports the construction of various R matrices in C++.
-For integer, logical and double-precision data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those constructed in R.
+In addition to accessing data in existing matrices, the \beachmat{} API also supports output into various R matrix representations in C++.
+For integer, logical and double-precision data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those generated in R.
 Logical and double-precision data can also be stored in CSC format, where only true or non-zero values are retained in the \code{lgCMatrix} or \code{dgCMatrix} instance, respectively.
 (The \textit{Matrix} package does not support sparse integer matrices.)
 We do not support character matrix output yet, due to the complexity of handling variable-length strings in a manner that is compatible with both R and HDF5.
@@ -366,9 +366,9 @@ Note that the layout considerations described for HDF5-backed input are equally 
 If the matrix is to be filled by row or column, the layout should be set to reflect this write access pattern for best performance.
 This can be achieved by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by the \beachmat{} API in the C++ code.
 
-As an aside, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
-In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
-Of course, this would involve writing two different versions of code for sparse and non-sparse input/output, which is the scenario that \beachmat{} was designed to avoid.
+%As an aside, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
+%In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
+%Of course, this would involve writing two different versions of code for sparse and non-sparse input/output, which is the scenario that \beachmat{} was designed to avoid.
 
 \section*{Performance of \beachmat{} on real data sets}
 
@@ -407,9 +407,29 @@ These results demonstrate that the strengths and weaknesses of the different rep
 To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
 We then applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
 First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
-The vast majority of cells were identified as being in G1 phase, consistent with the presence of differentiated neurons that are not actively cycling.
+The vast majority of cells were identified as being in G1 phase (Figure~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
 Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
-The size factor correlated well with the library size for each cell (Figure~Yb), with deviations caused by composition effects \cite{robinson2010scaling} due to differential expression between cell subpopulations.
+The size factor generally correlated well with the library size for each cell (Figure~\ref{fig:tenx}b).
+Deviations were observed for a small number of cells, consistent with composition effects \cite{robinson2010scaling} caused by differential expression between cell subpopulations.
+
+\begin{figure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 1mm,clip]{../real/10X/pics/cycle.png}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 0mm,clip]{../real/10X/pics/sizefacs.png}
+        \caption{}
+    \end{subfigure}
+    \caption{Results of a low-level analysis of the 10X million neuron data set.
+        (a) Cell cycle phase assignment, based on the G1 and G2M scores reported by \code{cyclone}.
+        Dashed lines indicate the score boundaries corresponding to each phase, with the number of assigned cells shown for each phase.
+        The intensity of each pixel corresponds to the log-number of cells with the corresponding scores.
+        (b) Size factor from the deconvolution method, plotted against the library size for each cell.
+        Cells were coloured according to the deviation from the median log-ratio of the size factor to the library size for all cells.
+    }
+    \label{fig:tenx}
+\end{figure}
 
 We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
