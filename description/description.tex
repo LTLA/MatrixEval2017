@@ -414,26 +414,33 @@ Deviations were observed for a small number of cells, consistent with compositio
 
 \begin{figure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 1mm,clip]{../real/10X/pics/cycle.png}
+        \includegraphics[height=2.3in,trim=0mm 0mm 1mm 10mm,clip]{../real/10X/pics/cycle.png}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 0mm,clip]{../real/10X/pics/sizefacs.png}
+        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 10mm,clip]{../real/10X/pics/sizefacs.png}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[height=2.3in,trim=0mm 0mm 0mm 10mm,clip]{../real/10X/pics/hvg.png}
         \caption{}
     \end{subfigure}
     \caption{Results of a low-level analysis of the 10X million neuron data set.
         (a) Cell cycle phase assignment, based on the G1 and G2M scores reported by \code{cyclone}.
         Dashed lines indicate the score boundaries corresponding to each phase, with the number of assigned cells shown for each phase.
         The intensity of each pixel corresponds to the log-number of cells with the corresponding scores.
-        (b) Size factor from the deconvolution method, plotted against the library size for each cell.
+        (b) Size factor for each cell from the deconvolution method, plotted against the library size.
         Cells were coloured according to the deviation from the median log-ratio of the size factor to the library size for all cells.
+        (c) Variance of the normalized log-expression values for each gene, plotted against the mean log-expression.
+        The red line indicates the mean-dependent trend fitted to all genes.
+        Orange points correspond to highly variable genes detected at a false discovery rate of 5\%, with the top 10 genes highlighted.
     }
     \label{fig:tenx}
 \end{figure}
 
 We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
-We identified a number of HVGs, including ...
+We identified a number of HVGs (Figure~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} and \textit{Sox11}. 
 Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized PCA.
 This showed clear substructure in the first two principal components (PCs), reflecting the diversity of cell types in the mouse brain.
 Indeed, once PCA has been performed, memory usage ceases to be a problem as the first 10-20 principal components for each cell can be stored in memory as a simple matrix.
