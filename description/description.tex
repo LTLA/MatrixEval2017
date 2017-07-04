@@ -455,15 +455,15 @@ Packages can be easily developed by the research community to implement cutting-
 The increasing number of packages designed to analyze scRNA-seq data (13 on Bioconductor at time of writing) provides a case in point.
 Here, we describe the \beachmat{} package, which provides a common API for data access from a variety of R matrix representations in C++.
 This simplifies package development and improves interoperability within the R/Bioconductor ecosystem, by enabling arbitrary C++ code to accept many different matrix inputs without any further effort on the part of the developer.
-While we have focused on scRNA-seq in this manuscript, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016interactionset}) may also benefit from \beachmat{}-driven code.
+While we have focused on scRNA-seq in this manuscript, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
 
-As we have shown, each matrix representation has its own strengths and weaknesses for data access.
+As we have shown, each matrix representation has specific strengths and weaknesses for data access.
 Matrices that occupy more memory generally provide faster access, as data do not need to be unpacked or retrieved from disk.
-This obviously comes at the cost of requiring more machine memory, which may not be practical for large data sets.
-Sparse matrix representations are not effective if sparsity-destroying operations (e.g., mean-centering, batch correction) are applied.
+Obviously, though, this may not be practical for large data sets.
+Sparse matrix representations are not effective if sparsity-destroying operations (e.g., mean-centering during PCA) are applied.
 Even high-performance computing resources have their limits, especially in academic environments with many users where high-resource jobs are difficult to schedule.
 In such cases, it may be preferable to sacrifice speed for reduced memory consumption by using a file-backed representation such as the \code{HDF5Matrix} class.
-By incorporating \beachmat{} into the C++ code, a package can dynamically accept different matrix types appropriate for the size of the data set and computing environment.
+By incorporating \beachmat{} into the C++ code, an R package can dynamically accept different matrix types appropriate for the size of the data set and computing environment.
 
 An alternative to using \beachmat{} is to write C++ code for one matrix representation (usually simple matrices) and apply it to chunks of a given input matrix.
 Each chunk is coerced into the chosen representation and the C++ code is applied to the coerced object.
@@ -474,8 +474,8 @@ Computational efficiency is also reduced by the use of R loops, multiple matrix 
 The \beachmat{} API provides a natural solution by moving the entire procedure into C++, simplifying development and maintenance.
 
 It is straightforward to integrate \beachmat{} into C++ code in existing R packages.
-Our modifications to \textit{scran} and \textit{scater} have enabled the analysis of very large scRNA-seq data sets in low-memory environments using file-backed representations, without compromising analysis speed for smaller data sets that can be held fully in memory.
-We anticipate that \beachmat{} will be useful to developers of computationally intensive bioinformatics methods that need to access data from a variety of matrices.
+Our modifications to \textit{scran} and \textit{scater} have enabled the analysis of a very large scRNA-seq data set in low-memory environments using file-backed representations, without compromising speed for smaller data sets that can be held fully in memory.
+We anticipate that \beachmat{} will be useful to developers of computationally intensive bioinformatics methods that need to access data from different matrices.
 Given the infrastructure that is now available for handling large data sets, it is fair to say that the rumours of R's demise (Supplementary Figure~X) have been greatly exaggerated.
 
 \section*{Methods}
