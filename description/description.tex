@@ -79,7 +79,7 @@
 
 \newcommand{\suppfigsimpleaccess}{1}
 \newcommand{\suppfigsparsecol}{2}
-\newcommand{\suppfighdflayout}{3}
+\newcommand{\suppfighdflayout}{3-4}
 
 \newcommand{\suppseclayoutoptim}{1}
 \newcommand{\suppseclayouttest}{2}
@@ -326,7 +326,7 @@ However, access to any given column is very slow, as the value of each element i
 In practice, both row and column accesses are often required (e.g., to access gene- and cell-level data), which means that the HDF5 file layout must be carefully chosen to allow for these orthogonal access patterns.
 We suggest using rectangular chunks that are proportional to the full size of the matrix.
 We also dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
-This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figure~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
+This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figures~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
 
 As previously mentioned, chunking of the HDF5 file allows for compression of data using filters such as ZLIB and SZIP.
 This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).

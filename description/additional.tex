@@ -178,16 +178,16 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 However, the best layout is not clear at the time of file creation, especially for scRNA-seq data where it is sensible to access data by gene (row) or cell (column).
 Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
 
-We use a simple strategy to convert an existing chunked HDF5 file to a layout using row-based chunks.
+The \beachmat{} strategy implements a simple approach to converting an existing HDF5 file to a layout using row- or column-based chunks.
 Consider an existing file with chunk dimensions of $(P_1, Q_1)$. 
 Assume that we want to obtain a new file with chunk dimensions of $(1, Q_2)$, i.e., row-wise chunks containing $Q_2$ values.
-We consider a stretch of $\myceil{Q_2/Q_1}$ chunks spanning the same $P_1$ rows. 
-These chunks are loaded from the original file into memory and written into a new file as $P_1$ row-wise chunks.
-This is repeated with the next stretch of chunks until all data are copied from the original to the new file.
-Similarly, to create column-wise chunks of size $P_2$, we consider the stretch of $\myceil{P_1/P_2}$ chunks spanning the same $Q_1$ columns.
-These are loaded into memory and written into a new file as $Q_1$ column-wise chunks.
+We extract a submatrix of size $(P_1, Q_2)$ from the existing file and write it to the new file with the row-chunked layout.
+This is repeated with the next submatrix of the same size along the next $Q_2$ columns, and the process is iterated until all columns have been read and written for these $P_1$ rows.
+The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $Q_2$ is not a multiple of $Q_1$.
+We repeat this procedure with the next $P_1$ rows until the entire file has been processed.
+To convert to column-based chunks of size $(P_2, 1)$, a submatrix of size $(P_2, Q_1)$ is extracted and written to file; this is repeated for the next $P_2$ rows, until all rows have been processed for these $Q_1$ columns; and the process is repeated with the next $Q_1$ columns until the entire file is rewritten.
 The idea is to load read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
-Disk reads/writes are minimized when $P_2$ and $Q_2$ are multiples of $P_1$ and $P_2$, respectively.
+Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
 Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).
 The time scales linearly with matrix size, so for a large data set with a million cells, it would take 2-3 hours.
@@ -197,9 +197,6 @@ this should be followed by a layout conversion step, and then by execution of fu
 An alternative option would be to store scRNA-seq data in both row- and column-chunked form (i.e., as two separate HDF5 data sets) to allow for both access patterns.
 While this has some uses, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
 Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and disk accesses must be performed twice.
-
-
-
 
 \small
 \bibliography{ref}
