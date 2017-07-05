@@ -80,6 +80,7 @@
 \newcommand{\suppfigsimpleaccess}{1}
 \newcommand{\suppfigsparsecol}{2}
 \newcommand{\suppfighdflayout}{3-4}
+\newcommand{\suppfigtenx}{5}
 
 \newcommand{\suppseclayoutoptim}{1}
 \newcommand{\suppseclayouttest}{2}
@@ -477,7 +478,7 @@ The \beachmat{} API provides a natural solution by moving the entire procedure i
 It is straightforward to integrate \beachmat{} into C++ code in existing R packages.
 Our modifications to \textit{scran} and \textit{scater} have enabled the analysis of a very large scRNA-seq data set in low-memory environments using file-backed representations, without compromising speed for smaller data sets that can be held fully in memory.
 We anticipate that \beachmat{} will be useful to developers of computationally intensive bioinformatics methods that need to access data from different matrices.
-Given the infrastructure that is now available for handling large data sets, it is fair to say that the rumours of R's demise (Supplementary Figure~X) have been greatly exaggerated.
+Given the infrastructure that is now available for handling large data sets, it is fair to say that the rumours of R's demise (Supplementary Figure~\suppfigtenx{}) have been greatly exaggerated.
 
 \section*{Methods}
 
