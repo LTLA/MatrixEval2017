@@ -372,7 +372,7 @@ This can be achieved by using functions from the \textit{HDF5Array} package to s
 
 \section*{Performance of \beachmat{} on real data sets}
 
-\subsection*{Access times for the brain data set}
+\subsection*{Access times for a small brain data set}
 We evaluated the performance of \beachmat{} with the different matrix representations on real data, using the count matrix from a scRNA-seq study of the mouse brain \cite{zeisel2015brain}.
 This data set contains integer expression values for 19972 genes in each of 3005 cells, of which 18\% are non-zero.
 We note that this is not a particularly large matrix, especially in the context of droplet-based experiments that routinely generate data for tens of thousands of cells.
@@ -403,7 +403,7 @@ These results demonstrate that the strengths and weaknesses of the different rep
     \label{fig:zeisel}
 \end{figure}
 
-\subsection*{Analysis of a very large-scale data set}
+\subsection*{Analysis of the very large 10X data set}
 To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
 We then applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
 First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
@@ -440,14 +440,15 @@ Deviations were observed for a small number of cells, consistent with compositio
 
 We then detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
-We identified a number of HVGs (Figure~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} and \textit{Sox11}. 
-Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized PCA.
+We identified a number of HVGs (Figure~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} \cite{ kay2011neurod6} and \textit{Sox11} \cite{bergsland2006establishment}. 
+Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using principal components analysis (PCA).
 This showed clear substructure in the first two principal components (PCs), reflecting the diversity of cell types in the mouse brain.
-Indeed, once PCA has been performed, memory usage ceases to be a problem as the first 10-20 principal components for each cell can be stored in memory as a simple matrix.
-This allows other R packages to be used directly without any modification -- provided the underlying algorithms are scalable with the number of cells.
+Indeed, once PCA has been performed, the first 10-20 PCs for each cell can be used as a summary of its expression profile.
+This can be stored in memory as a simple matrix and supplied directly to other R functions for further processing, provided the underlying algorithms are scalable with the number of cells.
 
 While a full characterisation of this data set is outside the scope of this paper, it is clear that we can proceed through many parts of the scRNA-seq analysis pipeline using \beachmat{}-driven C++ functions.
 Downstream procedures such as clustering and identification of marker genes are left as exercises for interested developers.
+We note that, by taking advantage of the file-backed \code{HDF5Matrix} class, this analysis can be conducted in reasonable time on a desktop with modest specifications (see Methods).
 
 \section*{Discussion}
 The popularity of the R programming language stems, in part, from the ease of its extensibility.
@@ -455,7 +456,7 @@ Packages can be easily developed by the research community to implement cutting-
 The increasing number of packages designed to analyze scRNA-seq data (13 on Bioconductor at time of writing) provides a case in point.
 Here, we describe the \beachmat{} package, which provides a common API for data access from a variety of R matrix representations in C++.
 This simplifies package development and improves interoperability within the R/Bioconductor ecosystem, by enabling arbitrary C++ code to accept many different matrix inputs without any further effort on the part of the developer.
-While we have focused on scRNA-seq in this manuscript, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
+While we have focused on scRNA-seq in this paper, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
 
 As we have shown, each matrix representation has specific strengths and weaknesses for data access.
 Matrices that occupy more memory generally provide faster access, as data do not need to be unpacked or retrieved from disk.
@@ -525,6 +526,24 @@ We fitted a mean-dependent trend to the variances to model the mean-variance rel
 Assuming that most genes were not highly variable, we tested whether the residual from the trend for each gene was significantly greater than zero.
 Highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
 To reduce computational time, the severity of the multiple testing correction and to avoid discreteness when fitting the trend, we only considered genes with an average count above 0.01.
+
+We used a simple approach to performing PCA on a large matrix.
+After subsetting the expression matrix by the detected HVGs, we mean-centred and standardized the expression vector for each gene.
+We randomly selected 10000 cells and coerced the expression profiles into a simple matrix.
+This was used as input into the \code{prcomp} function to obtain the loading vectors.
+We then projected all cells onto the space defined by the first two loading vectors to obtain PC1 and PC2 coordinates for all cells.
+This approach assumes the selected 10000 cells provide a good representation of the variance structure in the full population, allowing the approximate loading vectors to be obtained by PCA on the smaller matrix.
+More sophisticated strategies such as randomized PCA \cite{halko2011finding} could also be used, but a correct and efficient implementation of such algorithms for \code{HDF5Matrix} objects is beyond the scope of this paper.
+
+\subsection*{Machine specification details}
+All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.0.
+On this machine, the 10X data analysis required approximately 4 hours for quality control and construction of the \code{HDF5Matrix};
+22 hours for cell cycle phase assignment;
+8 hours for calculation of size factors and generation of normalized expression values;
+10 hours for detecting highly variable genes;
+and 5 hours for PCA.
+Only the phase assignment step was parallelized, and greater speed could easily be achieved for other steps with multiple cores (at the cost of memory, as each core has its own chunk cache).
+
 
 {\small
     \bibliography{ref}
