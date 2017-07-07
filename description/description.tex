@@ -351,11 +351,10 @@ In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
 \subsection*{Storing matrix output}
-In addition to accessing data in existing matrices, the \beachmat{} API also supports output into various R matrix representations in C++.
-For integer, logical and double-precision data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those generated in R.
-Logical and double-precision data can also be stored in CSC format, where only true or non-zero values are retained in the \code{lgCMatrix} or \code{dgCMatrix} instance, respectively.
-(The \textit{Matrix} package does not support sparse integer matrices.)
-We do not support character matrix output yet, due to the complexity of handling variable-length strings in a manner that is compatible with both R and HDF5.
+In addition to accessing data in existing matrices, the \beachmat{} API allows values generated in C++ to be stored in various matrix representations for output to R.
+For integer, logical, double-precision and character data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those generated in R.
+Logical and double-precision data can also be stored in CSC format, where only true or non-zero values are retained in \code{lgCMatrix} or \code{dgCMatrix} instances, respectively.
+(The \textit{Matrix} package does not support sparse integer or character matrices, so these are ignored.)
 
 The output representation can either be explicitly specified in the code, or it can be automatically chosen to match some input representation.
 To illustrate, consider a C++ function that accepts a matrix as input and returns a matrix of similar dimensions.
@@ -486,6 +485,21 @@ Our modifications to \textit{scran} and \textit{scater} have enabled the analysi
 We anticipate that \beachmat{} will be useful to developers of computationally intensive bioinformatics methods that need to access data from different matrices.
 Given the infrastructure that is now available for handling large data sets, it is fair to say that the rumours of R's demise (Supplementary Figure~\suppfigtenx{}) have been greatly exaggerated.
 
+\section*{Code availability}
+\beachmat{} is available as part of version 3.6 of the Bioconductor project (\url{https://bioconductor.org/packages/beachmat}).
+The \textit{scran} and \textit{scater} packages that were modified to support \beachmat{} can also be installed from Bioconductor.
+All code used to perform the simulations and real data analyses are available on Github (\url{https://github.com/LTLA/MatrixEval2017}).
+
+\section*{Author contributions}
+ATLL conceived and implemented the \beachmat{} C++ API, performed the data access simulations and analyzed the 10X data set.
+
+\section*{Acknowledgements}
+We thank Martin Morgan, Andrew McDavid, Peter Hickey, Raphael Gottardo, Mike Jiang, Vince Carey, John Readey and other members of the Bioconductor single-cell big data working group for useful discussions.
+We also thank Davis McCarthy for his assistance with incorporating \beachmat{} into \textit{scater}.
+
+\section*{Funding statement}
+ATLL was supported by core funding from Cancer Research UK (award no. 17197 to Dr.\ John Marioni).
+
 \section*{Methods}
 
 \subsection*{Access timings with simulated data}
@@ -542,14 +556,14 @@ We then projected all cells onto the space defined by the first two loading vect
 This approach assumes the selected 10000 cells provide a good representation of the variance structure in the full population, allowing the approximate loading vectors to be obtained by PCA on the smaller matrix.
 More sophisticated strategies such as randomized PCA \cite{halko2011finding} could also be used, but a correct and efficient implementation of such algorithms for \code{HDF5Matrix} objects is beyond the scope of this paper.
 
-\subsection*{Machine specification details}
-All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.0.
+\subsection*{Details of the computing environment}
+All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.0 and Biocondcutor 3.6.
 On this machine, the 10X data analysis required approximately 4 hours for quality control and construction of the \code{HDF5Matrix};
 22 hours for cell cycle phase assignment;
 8 hours for calculation of size factors and generation of normalized expression values;
 10 hours for detecting highly variable genes;
-and 5 hours for PCA.
-Only the phase assignment step was parallelized, and greater speed could easily be achieved for other steps with multiple cores (at the cost of memory, as each core has its own chunk cache).
+and 8 hours for PCA.
+Only the phase assignment step was run on multiple cores.
 
 
 {\small
