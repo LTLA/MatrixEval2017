@@ -110,7 +110,14 @@ and friends
 \end{flushleft}
 
 \section*{Abstract}
-Blha blah blah
+Recent advances in single-cell RNA sequencing have dramatically increased the number of cells that can be profiled in a single experiment.
+This provides unparalleled resolution to study cellular heterogeneity within biological processes such as differentiation.
+However, the explosion of data that are generated from such experiments poses a challenge to the existing computational infrastructure for statistical data analysis.
+In particular, large matrices holding expression values for each gene in each cell require sparse or file-backed representations for manipulation with the popular R programming language.
+Here, we describe a C++ interface named \beachmat{}, which enables agnostic data access from various matrix representations.
+This allows package developers to write efficient C++ code that is interoperable with simple, sparse and HDF5-backed matrices, amongst others.
+We perform simulations to examine the performance of \beachmat{} on each matrix representation, 
+and we demonstrate how \beachmat{} can be incorporated into the code of other packages to drive analyses of a very large single-cell data set.
 
 % now start line numbers
 \linenumbers
@@ -153,6 +160,13 @@ It would clearly be preferable to implement critical functions, loops and all, i
 % One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
 % However, this involves some costs on its own, e.g., memory allocations that were previously one-offs need to be re-performed.
 % If you need to share data across iterations, it will also involve more function calls to store relevant variables, so the cost of function calls is not avoided.
+
+Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each Matrix Type), which enables access to R matrix data in a manner that is agnostic to the exact matrix representation.
+This allows developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes, including simple matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
+Using simulated and real scRNA-seq data, we assess the performance of \beachmat{} for data access from each matrix representation.
+We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of different representations in different settings.
+We also demonstrate how \beachmat{} can be used by other Bioconductor packages to power the analysis of a very large scRNA-seq data set. 
+By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing scRNA-seq and other large matrix data.
 
 \section*{Description of the \beachmat{} API}
 
