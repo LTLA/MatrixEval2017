@@ -4,6 +4,7 @@ tmp.dir <- "tmp-hdf5"
 dir.create(tmp.dir)
 library(HDF5Array)
 
+############################
 # With respect to increasing numbers of columns.
 
 ngenes <- 10000    
@@ -30,6 +31,7 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
 
 }
 
+############################
 # With respect to increasing numbers of rows 
 
 ncells <- 1000
@@ -56,9 +58,11 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
 
 }
 
+############################
 # Cleaning up
 
 unlink(tmp.dir, recursive=TRUE)
+sessionInfo()
 
 ########################################3
 # Testing chunk cache settings: these two should give the same time,

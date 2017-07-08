@@ -35,13 +35,13 @@ plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, upper
 incoming <- read.table("../timings_base_col.txt", header=TRUE)
 incoming$Ncells <- incoming$Ncells/1e3
 pdf("base_col.pdf")
-plotter(incoming, "Ncells", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of columns ("*10^3*")"), main="Column access times")
+plotter(incoming, "Ncells", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of columns ("*10^3*")"), main="Column access")
 dev.off()
 
 incoming <- read.table("../timings_base_row.txt", header=TRUE)
 incoming$Ngenes <- incoming$Ngenes/1e3
 pdf("base_row.pdf")
-plotter(incoming, "Ngenes", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), main="Row access times", loc=NA)
+plotter(incoming, "Ngenes", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), main="Row access", loc=NA)
 dev.off()
 
 ##############################

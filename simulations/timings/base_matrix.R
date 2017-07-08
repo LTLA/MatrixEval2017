@@ -44,3 +44,7 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
                 timings=def.time, file="timings_base_row.txt", overwrite=overwrite)
 }
 
+###########################
+# Wrapping up
+
+sessionInfo()

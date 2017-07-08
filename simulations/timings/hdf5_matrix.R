@@ -78,8 +78,6 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
                 timings=def.time, file="timings_hdf5_row.txt", overwrite=overwrite)
 }
 
-asdasds
-
 ###########################
 # Column access, alternative layouts.
 
@@ -195,4 +193,4 @@ for (density in c(0.01, 0.05, 0.1, 0.2, 0.5, 1)) {
 # Wrapping up
 
 unlink(tmp.dir, recursive=TRUE)
-
+sessionInfo()

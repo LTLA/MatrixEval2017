@@ -70,3 +70,8 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
     skip.arma <- TRUE
 }
 
+###########################
+# Wrapping up
+
+sessionInfo()
+
