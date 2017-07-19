@@ -134,11 +134,11 @@ The challenge is compounded by the presence of large-scale projects such as the 
 Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
 This results in even more data compared to gene-level expression values.
 
-It is no exaggeration to say that the R programming language \cite{R} is the premier tool of choice for statistical data analysis.
+It is fair to say that the R programming language \cite{R} is the premier tool of choice for statistical data analysis.
 R provides well-designed, rigorously-tested implementations of a large variety of statistical methods.
 Its interactive nature makes it easy for newcomers to learn and lends itself to data exploration and research, while its programming features allow more experienced users to readily assemble complex analyses.
-It is also extensible through the installation of optional packages, often contributed by the research community, which provide implementations of bespoke methods targeted to solve specific scientific problems.
-In particular, the Bioconductor project \cite{gentleman2004bioconductor} supports a number of packages for biological data analyis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
+It is also extensible through the installation of optional packages, often contributed by the research community, which provide implementations of bespoke methods targeted to specific scientific problems.
+In particular, the Bioconductor project \cite{gentleman2004bioconductor} supports a number of packages for biological data analysis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
 Packages are usually written in R but can also include compiled code (e.g., in C/C++ or Fortran), which is beneficial for computationally intensive tasks where high performance is required.
 For C++ code, this process is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
 
@@ -146,6 +146,7 @@ In its simplest form, a scRNA-seq data set consists of a count matrix where each
 This can be most directly represented in R as a simple matrix, where each entry is explicitly stored in memory.
 Alternatively, it can be stored as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
 This exploits the fact that scRNA-seq protocols have low capture efficiencies \cite{grun2015design} -- RNA molecules are present in cells but are not reverse-transcribed to cDNA for sequencing, resulting in a preponderance of zeroes in the final count matrix.
+Droplet-based protocols also exhibit very low sequencing depth per cell, increasing the sparsity of the data.
 Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are extracted into memory upon request.
 In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that code written by users (or other developers) can be agnostic to the exact representation of the matrix.
 This simplifies the development process and improves interoperability.
@@ -158,7 +159,7 @@ However, this is an unappealing option for high-performance code.
 For scRNA-seq data stored in matrices, consider the most common access pattern, i.e., looping across all cells or genes and performing operations on the cell- or gene-specific expression profiles.
 If this was performed in R, the code within the loop would need to be re-interpreted at each of thousands or millions of iterations.
 This increases the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
-It would clearly be preferable to implement critical functions, loops and all, in compiled code wherever possible.
+It would clearly be preferable to implement critical functions (including loops) in compiled code wherever possible.
 
 % One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
 % However, this involves some costs on its own, e.g., memory allocations that were previously one-offs need to be re-performed.
@@ -168,7 +169,7 @@ Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each
 This allows developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes, including simple matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
 Using simulated and real scRNA-seq data, we assess the performance of \beachmat{} for data access from each matrix representation.
 We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of different representations in different settings.
-We also demonstrate how \beachmat{} can be used by other Bioconductor packages to power the analysis of a very large scRNA-seq data set. 
+We also demonstrate how \beachmat{} can be used by other Bioconductor packages to empower the analysis of a very large scRNA-seq data set. 
 By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing scRNA-seq and other large matrix data.
 
 \section*{Description of the \beachmat{} API}
@@ -183,7 +184,7 @@ This pointer is the same regardless of the R representation and can be used in d
 
 While the API is agnostic to the matrix representation, it still needs to know the type of data that is stored within the matrix.
 We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
-The same methods are available for all classes of each data type, which eases the cognitive burden on the developer.
+The same methods are available for all classes of each data type, which eases the burden on the developer.
 Briefly, when access to a specific row or column (or a slice thereof) is requested, the API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
 A request for a specific entry of the matrix will directly return the corresponding data value.
 
@@ -224,7 +225,7 @@ Another reason is that, at each row/column access, \beachmat{} copies the matrix
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
 Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in memory.
 Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
-Nonetheless, for read-only access to column data in a simple matrix, \beachmat{} can be directed to return an iterator directly to the start of the column.
+Nonetheless, for read-only access to column data in a simple matrix, developers can direct \beachmat{} to return an iterator directly to the start of the column.
 This avoids making a copy and allows for some optimization in certain scenarios.
 
 \subsection*{Performance with sparse matrices}
