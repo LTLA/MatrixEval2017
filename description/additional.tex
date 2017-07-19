@@ -159,12 +159,12 @@ We set $S=8000000$ to simplify the later divisions, which corresponds to an in-m
 Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
-We emphasize that the chunk dimensions are not chosen automatically by \textit{beachmat} but must be manually specified.
-Obviously, the choice of chunk dimensions is irrelevant when accessing data from existing HDF5 files where the layout is fixed.
-For data output from \textit{beachmat}, it is possible to control the chunk dimensions of the new HDF5 file.
-However, the dimensions still need to be chosen by the user/developer for optimal performance.
-This is because \textit{beachmat} cannot know the anticipated access pattern at the time of file creation.
+\textit{beachmat} provides functions to perform the above calculations given $R$ and $C$.
+However, \textit{beachmat} will not automatically use the computed $P$ and $Q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
+This is because the optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
 The choice of $P$ and $Q$ above is only optimized for consecutive row and column accesses, while the actual access pattern might be random (see Section~\ref{sec:random}).
+Thus, the chunk dimensions must be manually chosen by the user/developer.
+Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
 
 \section{Performance of different HDF5 file layouts}
 
