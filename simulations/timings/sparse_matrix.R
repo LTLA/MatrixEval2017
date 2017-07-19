@@ -25,7 +25,7 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
         overwrite <- FALSE 
         writeToFile(Type="RcppArmadillo", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=arma.time, file="timings_sparse_col.txt", overwrite=overwrite)
-        writeToFile(Type="dense", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_col.txt", overwrite=overwrite)
     }
 }

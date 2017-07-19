@@ -68,12 +68,14 @@ Each chunk is read from disk in its entirety, even if only a subset of the chunk
 This is wasteful as more data needs to be processed than is required for the current request.
 To improve performance, chunks are cached in memory once they are read.
 This means that they do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
-We can tune the parameters of the HDF5 chunk cache to improve access to consecutive row/columns.
+Chunks are then evicted from the cache once the memory limit is exceeded or if the hash indices overlap.
+This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
+However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
 
 \subsection{Selecting the size of the chunk cache}
 Assume that we have a chunk cache of size $S$ (in terms of data values; this will have to be multiplied by the size in bytes of each value to obtain the actual cache size).
 Denote the number of rows and columns of our matrix as $R$ and $C$, respectively. 
-We further assume that this data are stored in a chunked layout, where the number of rows and columns in each chunk is $P$ and $Q$, respectively.
+We further assume that these data are stored in a chunked layout, where the number of rows and columns in each chunk is $P$ and $Q$, respectively.
 
 The chunk size $S$ should be chosen so that it can hold all chunks lying across a row or column.
 Each chunk contains $PQ$ values, and each row and column overlaps $\myceil{C/Q}$ and $\myceil{R/P}$ chunks, respectively.
@@ -153,7 +155,7 @@ Once the smallest $S$ is obtained, the largest $P$ and $Q$ are easily determined
 \subsection{Worked example of choosing chunk settings}
 Say that we have a matrix $X$ with 20000 rows and 50000 columns.
 Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ to optimize row and column access.
-We set $S=8000000$ to simplify the later divisions, which corresponds to a in-memory space of 64 MB.
+We set $S=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB.
 Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
@@ -231,7 +233,7 @@ Transformations applied to one data set must be applied to the other, which intr
 
 \begin{figure}[bt]
     \centering
-    \includegraphics[width=\textwidth]{pics/sparse.pdf}
+    \includegraphics[width=0.8\textwidth]{pics/sparse.pdf}
     \caption{A schematic of the column-sparse compressed matrix format, as implemented by the \texttt{dgCMatrix} class in the \textit{Matrix} package.
         The grey box represents a sparse matrix with zero entries indicated by the dots.
         The \texttt{x} vector stores all non-zero values, ordered in column-major format.
@@ -290,7 +292,7 @@ Transformations applied to one data set must be applied to the other, which intr
     \end{subfigure}
     \caption{Time required to convert from a column-based chunk layout to a row-based chunk layout, or vice versa.
         Each chunk contained 5000 values along a single row or column (or set to the corresponding dimension of the matrix, if it was smaller than 5000).
-        Conversion times were recorded with respect to increasing number of (a) rows and (b) columns.
+        Conversion times were recorded with respect to increasing number of (a) columns and (b) rows.
         All values represent the mean of 10 simulation iterations.
         Horizontal dotted lines represent 2-fold increases in time.
     }
