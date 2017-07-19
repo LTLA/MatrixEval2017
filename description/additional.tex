@@ -159,6 +159,13 @@ We set $S=8000000$ to simplify the later divisions, which corresponds to an in-m
 Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
+We emphasize that the chunk dimensions are not chosen automatically by \textit{beachmat} but must be manually specified.
+Obviously, the choice of chunk dimensions is irrelevant when accessing data from existing HDF5 files where the layout is fixed.
+For data output from \textit{beachmat}, it is possible to control the chunk dimensions of the new HDF5 file.
+However, the dimensions still need to be chosen by the user/developer for optimal performance.
+This is because \textit{beachmat} cannot know the anticipated access pattern at the time of file creation.
+The choice of $P$ and $Q$ above is only optimized for consecutive row and column accesses, while the actual access pattern might be random (see Section~\ref{sec:random}).
+
 \section{Performance of different HDF5 file layouts}
 
 \subsection{Testing with simulated data}
@@ -176,6 +183,8 @@ This highlights the utility of rectangular chunks for both row and column access
 The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
 
 \subsection{Dealing with random access}
+\label{sec:random}
+
 It should be stressed that these timings were generated with consecutive row and column accesses.
 The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will be contain the next requested row or column.
 (We omit the situation where the entire matrix is loaded into the cache.
