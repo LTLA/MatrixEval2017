@@ -255,7 +255,7 @@ Row-level access is more difficult in the CSC format as entries in the same row 
 If a row is requested, a binary search on $x$ needs to be performed within $G_y$ for each column $y$, which requires an average time proportional to $\log(N_r)$.
 In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $N_r$ elements ahead on the one-dimensional array.
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
-If row $r$ is accessed, \beachmat{} will loop over all columns and cache the index the first value of $x$ in $G_y$ that is not less than $r$.
+If row $r$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $x$ in $G_y$ that is not less than $r$.
 When $r+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
 This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}).
 Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
@@ -339,17 +339,20 @@ In the contiguous layout, raw data are flattened into a one-dimensional array an
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
 For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
 Each chunk is always read (or written) in its entirety, even when only a portion of the chunk is requested.
-The data in each chunk can also be compressed to reduce the file size.
-
 Chunking is required for fast access to data, \textit{provided that the layout is consistent with the expected access pattern}.
-For example, row-chunking allows fast access to each row, as only one read is required to obtain the chunk for each row.
+For example, a row-chunked layout allows fast access to each row, as only one disk read is required to obtain the chunk for each row.
 However, access to any given column is very slow, as the value of each element in the column must be obtained by performing a disk read for every row chunk in its entirety, i.e., $N_r$ reads in total.
-In practice, both row and column accesses are often required (e.g., to access gene- and cell-level data), which means that the HDF5 file layout must be carefully chosen to allow for these orthogonal access patterns.
-We suggest using rectangular chunks that are proportional to the full size of the matrix.
-We also dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
-This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figures~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
+In practice, both row and column accesses are often required (e.g., to access gene- and cell-level scRNA-seq data), which means that the file layout must be carefully chosen to allow for these orthogonal access patterns.
 
-As previously mentioned, chunking of the HDF5 file allows for compression of data using filters such as ZLIB and SZIP.
+The choice of file layout is the responsibility of the process that constructs the HDF5 file.
+This can be the original data provider; the developer whose function returns a \code{HDF5Matrix}; or a user who coerces their data into a \code{HDF5Matrix}.
+As such, the chunking scheme is generally outside of \beachmat{}'s control, preventing the API from automatically choosing the optimal layout for the requested access pattern.
+Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
+This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figures~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
+For new HDF5 files where consecutive row/column access is anticipated, we suggest using rectangular chunks that are proportional to the dimensions of the matrix.
+\beachmat{} also provides a function to convert an existing HDF5 file to pure row- or column-based chunks (Additional Note~\suppseclayouttest{}), which performs optimally for random row and column access, respectively.
+
+Another benefit of chunking is that the data in each chunk can be compressed using filters such as ZLIB and SZIP.
 This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
 The use of smaller files reduces the risk that disk space will be exceeded during the course of an analysis.
 This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or intermediate results.
@@ -380,7 +383,7 @@ The output representation can either be explicitly specified in the code, or it 
 To illustrate, consider a C++ function that accepts a matrix as input and returns a matrix of similar dimensions.
 If the input is in the simple matrix format, one might assume that there is enough memory to also store the output in the simple format;
 whereas if the input is a \code{HDF5Matrix}, one could presume that the output would be similarly large, thus requiring a \code{HDF5Matrix} representation for the results.
-This facility means that results of processing in C++ can be readily returned in the most suitable representation for manipulation in R.
+This means that results of processing in C++ can be readily returned in the most suitable representation for manipulation in R.
  
 Note that the layout considerations described for HDF5-backed input are equally applicable to HDF5-backed output.
 If the matrix is to be filled by row or column, the layout should be set to reflect this write access pattern for best performance.
