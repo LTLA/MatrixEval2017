@@ -78,9 +78,10 @@
 \newcommand{\code}[1]{\texttt{#1}}
 
 \newcommand{\suppfigsimpleaccess}{1}
-\newcommand{\suppfigsparsecol}{2}
-\newcommand{\suppfighdflayout}{3-4}
-\newcommand{\suppfigtenx}{5}
+\newcommand{\suppfigsparseschem}{2}
+\newcommand{\suppfigsparsecol}{3}
+\newcommand{\suppfighdflayout}{4-5}
+\newcommand{\suppfigtenx}{6}
 
 \newcommand{\suppseclayoutoptim}{1}
 \newcommand{\suppseclayouttest}{2}
@@ -229,7 +230,7 @@ Nonetheless, for read-only access to column data in a simple matrix, developers 
 This avoids making a copy and allows for some optimization in certain scenarios.
 
 \subsection*{Performance with sparse matrices}
-The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format.
+The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format (Supplementary Figure~\suppfigsparseschem{}).
 Consider that every non-zero entry in this matrix is characterized by a triplet: row $x$, column $y$ and value $v$.
 To convert this into the CSC format, entries are sorted in order of increasing $x + N_ry$.
 All entries with the same value of $y$ are now grouped together in the ordered sequence.

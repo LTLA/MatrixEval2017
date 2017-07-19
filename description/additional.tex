@@ -207,6 +207,7 @@ Transformations applied to one data set must be applied to the other, which intr
 \bibliographystyle{unsrt}
 
 \newpage
+
 \begin{figure}[bt]
     \centering
     \begin{subfigure}[b]{0.49\textwidth}
@@ -226,6 +227,20 @@ Transformations applied to one data set must be applied to the other, which intr
         Intervals between the horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:basetime}
+\end{figure}
+
+\begin{figure}[bt]
+    \centering
+    \includegraphics[width=\textwidth]{pics/sparse.pdf}
+    \caption{A schematic of the column-sparse compressed matrix format, as implemented by the \texttt{dgCMatrix} class in the \textit{Matrix} package.
+        The grey box represents a sparse matrix with zero entries indicated by the dots.
+        The \texttt{x} vector stores all non-zero values, ordered in column-major format.
+        The index of each element in \texttt{x} is shown in red.
+        The \texttt{i} vector stores the row indices (blue) corresponding to the ordered non-zero values.
+        The \texttt{p} vector stores the element index of the first non-zero value in each column (brown).
+        The last element of \texttt{p} is always the total number of non-zero entries.
+    }
+    \label{fig:sparsefig}
 \end{figure}
 
 \begin{figure}[bt]
