@@ -476,8 +476,9 @@ Indeed, once PCA has been performed, the first 10-20 PCs for each cell can be us
 This can be stored in memory as a simple matrix and supplied directly to other R functions for further processing, provided the underlying algorithms are scalable with the number of cells.
 
 While a full characterisation of this data set is outside the scope of this paper, it is clear that we can proceed through many parts of the scRNA-seq analysis pipeline using \beachmat{}-driven C++ functions.
-Downstream procedures such as clustering and identification of marker genes are left as exercises for interested developers.
-We note that, by taking advantage of the file-backed \code{HDF5Matrix} class, this analysis can be conducted in reasonable time on a desktop with modest specifications (see Methods).
+By taking advantage of the file-backed \code{HDF5Matrix}, this analysis can be conducted in reasonable time on a desktop with modest specifications (see Methods).
+In particular, the incoporation of the \beachmat{} API only required modest modifications to the existing C++ code for scRNA-seq data analysis.
+Obtaining this level of functionality without \beachmat{} would be much more difficult.
 
 \section*{Discussion}
 The popularity of the R programming language stems, in part, from the ease of its extensibility.
@@ -499,7 +500,7 @@ An alternative to using \beachmat{} is to write C++ code for one matrix represen
 Each chunk is coerced into the chosen representation and the C++ code is applied to the coerced object.
 After looping across all chunks, the chunk-wise results are combined to obtain the final result for the entire matrix.
 However, this hybrid approach requires extensive coordination between R and C++ to keep track of the chunk that is being processed, to monitor intermediate variables that persist between chunks, and to combine the results in an appropriate manner.
-The need to ensure that R and C++ are interacting correctly at multiple points imposes a significant cognitive burden on the developer.
+The need to ensure that R and C++ are interacting correctly at multiple points imposes a significant burden on the developer.
 Computational efficiency is also reduced by the use of R loops, multiple matrix coercions and repeated C++ function calls.
 The \beachmat{} API provides a natural solution by moving the entire procedure into C++, simplifying development and maintenance.
 
@@ -520,7 +521,8 @@ MLS ported the HDF5 C++ API into \textit{Rhdf5lib}, to support HDF5 read/write a
 
 \section*{Acknowledgements}
 We thank Martin Morgan, Andrew McDavid, Peter Hickey, Raphael Gottardo, Mike Jiang, Vince Carey, John Readey and other members of the Bioconductor single-cell big data working group for useful discussions.
-We also thank Davis McCarthy for his assistance with incorporating \beachmat{} into \textit{scater}.
+We thank Davis McCarthy for his assistance with incorporating \beachmat{} into \textit{scater}.
+We also thank John Marioni for helpful comments on the manuscript.
 
 \section*{Funding statement}
 ATLL was supported by core funding from Cancer Research UK (award no. 17197 to Dr.\ John Marioni), the University of Cambridge and Hutchison Whampoa Ltd.
@@ -544,7 +546,7 @@ Timings were performed in R using the \code{system.time} function on a call to e
 This was repeated 10 times with new matrices, and the average time and standard error were computed for each access method. 
 Row and column access times were evaluated with respect to the numbers of rows and columns, respectively.
 For sparse matrices, times were also recorded with respect to the density of non-zero entries.
-In all cases, standard errors were negligible and not plotted for brevity.
+In all cases, standard errors were negligible and not plotted for clarity.
 
 \subsection*{Access timings with the brain data}
 scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex/}.
