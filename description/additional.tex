@@ -122,6 +122,9 @@ This ensures that the hash index can never repeat itself for a given meta-column
 The most direct approach is to set $N = kC_0 + 1$  where $k \in \mathbf{N}^+$ and $kC_0 +1 \ge R_0$.
 This guarantees that the lowest common multiple of $N$ and $C_0$ is their product, and that $mN/C_0 \ge R_0$.
 
+% Note that in the actual implementation, the meta rows are columns and vice versa.
+% This is because rhdf5 internally transposes the data so that HDF5's row-major becomes R's column-major.
+
 \subsection{Choosing the chunk dimensions}
 The preceding text assumes that the chunk dimensions $P$ and $Q$ were set beforehand.
 This is the case for existing HDF5 files, where the chunk layout must be specified during data set creation.
@@ -152,11 +155,17 @@ In general, this requires some numerical analysis to account for the discrete na
 We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $S \ge \max\{R\sqrt{C}, C\sqrt{R}\}$.
 Once the smallest $S$ is obtained, the largest $P$ and $Q$ are easily determined.
 
+% 3 and 4 require that PQ >= C and PQ >= R
+% 1 and 2 require that S >= CP and S >= RQ
+% Assuming R >=C, let S = RC^0.5 (derived by setting PQ = max(R, C) and assuming S = CP = RQ).
+% P = S/C = R/C^0.5 and Q = S/R = C^0.5, thus satisfying 1 and 2.
+% PQ = R >= C, thus satisfying 3 and 4.
+
 \subsection{Worked example of choosing chunk settings}
 Say that we have a matrix $X$ with 20000 rows and 50000 columns.
-Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ to optimize row and column access.
-We set $S=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB.
-Our chunk dimensions are then $P = S/50000 = 160$ and $Q = S/20000 = 400$.
+Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ for optimal access.
+We set $S=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB for double-precision values.
+Our chunk dimensions are $P = S/50000 = 160$ and $Q = S/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
 \textit{beachmat} provides functions to perform the above calculations given $R$ and $C$.
