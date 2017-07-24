@@ -129,7 +129,7 @@ and we demonstrate how \beachmat{} can be incorporated into the code of other pa
 \section*{Introduction}
 Recent advances in single-cell RNA sequencing (scRNA-seq) technologies have led to an explosion in the quantity of data that can be generated in routine experiments.
 Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow expression profiles to be captured for each of thousands to millions of cells.
-It hardly needs to be said that this is a substantial amount of data -- the expression profile for each cell consists of a measure of expression for each transcriptionally active genomic feature, of which there are usually 10,000 to 40,000 in most common model organisms.
+It hardly needs to be said that this is a substantial amount of data -- the expression profile for each cell consists of a measure of expression for each transcriptionally active (and polyadenylated) genomic feature, of which there are usually 10,000-40,000 in the current genome annotations for most model organisms.
 Careful computational analysis is critical to extract meaningful biology from these data, but the sheer volume strains existing pipelines and methods designed for single-cell data processing.
 The challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
 Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
@@ -145,9 +145,9 @@ For C++ code, this process is facilitated by the \textit{Rcpp} package \cite{edd
 
 In its simplest form, a scRNA-seq data set consists of a count matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
 This can be most directly represented in R as a simple matrix, where each entry is explicitly stored in memory.
-Alternatively, it can be stored as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
+Alternatively, it can be represented as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
 This exploits the fact that scRNA-seq protocols have low capture efficiencies \cite{grun2015design} -- RNA molecules are present in cells but are not reverse-transcribed to cDNA for sequencing, resulting in a preponderance of zeroes in the final count matrix.
-Droplet-based protocols also exhibit very low sequencing depth per cell, increasing the sparsity of the data.
+Droplet-based protocols also exhibit very low sequencing depth per cell, further increasing the sparsity of the data.
 Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are extracted into memory upon request.
 In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that code written by users (or other developers) can be agnostic to the exact representation of the matrix.
 This simplifies the development process and improves interoperability.
@@ -183,9 +183,9 @@ The intention is for a user to pass in an R matrix of any type, in the form of a
 A function is then called to produce its C++ equivalent, returning a pointer to the base class.
 This pointer is the same regardless of the R representation and can be used in downstream code to achieve run-time polymorphism.
 
-While the API is agnostic to the matrix representation, it still needs to know the type of data that is stored within the matrix.
+While the API is agnostic to the matrix representation, it still needs to know the type of data that are stored in the matrix.
 We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
-The same methods are available for all classes of each data type, which eases the burden on the developer.
+The same methods are available for all classes of each data type, improving their ease of use for developers.
 Briefly, when access to a specific row or column (or a slice thereof) is requested, the API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
 A request for a specific entry of the matrix will directly return the corresponding data value.
 
@@ -244,7 +244,7 @@ For double-precision matrices with many rows, sparse matrices will be more memor
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
 The CSC format simplifies data access by imposing structure on the non-zero entries.
-When accessing a particular column $c$, all corresponding entries in $G_c$ can be quickly extracted by taking the relevant part of the ordered sequence.
+When accessing a particular column $y$, all corresponding entries in $G_y$ can be quickly extracted by taking the relevant part of the ordered sequence.
 For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\suppfigsparsecol{}).
 This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
 As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
@@ -295,7 +295,7 @@ These results motivate the use of \beachmat{} for data access from sparse matric
 For highly sparse data, it is also possible to design efficient algorithms that completely avoid processing the zeroes.
 To accommodate this, \beachmat{} can be directed to return the indices and values of all non-zero elements in each row or column.
 In contrast, the default acccess methods will return all values of a row/column.
-This ensures that the API is consistent with non-sparse representations but is time-wasting for operations where zeroes can be ignored.
+This ensures that the API is consistent with non-sparse representations but is inefficient for operations where zeroes can be ignored.
 The user-level code can switch between different algorithms depending on whether the input matrix is sparse or dense.
 In general, we recommend this approach only for performance-critical parts of the code.
 Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
@@ -303,7 +303,7 @@ Writing, testing and maintaining two different versions of the same code doubles
 \subsection*{Performance with HDF5-based matrices}
 For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
-Each large matrix is stored as a dataset in a HDF5 file on disk, while in memory it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
+Each large matrix is stored as a dataset in a HDF5 file on disk, while in memory, it is represented in R by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 The in-memory representation is very small -- fewer than 3 kilobytes in size -- and simply extracts data from disk upon request.
 Each \code{HDF5Matrix} instance provides methods to mimic a real matrix object and allows users to manipulate the matrix in real time without the need to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the on-disk footprint remains manageable throughout the course of the analysis.
@@ -347,9 +347,8 @@ In practice, both row and column accesses are often required (e.g., to access ge
 The choice of file layout is the responsibility of the process that constructs the HDF5 file.
 This can be the original data provider; the developer whose function returns a \code{HDF5Matrix}; or a user who coerces their data into a \code{HDF5Matrix}.
 As such, the chunking scheme is generally outside of \beachmat{}'s control, preventing the API from automatically choosing the optimal layout for the requested access pattern.
-Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~1 for more information.
+Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~\suppseclayoutoptim{} for more information.
 This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figures~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
-For new HDF5 files where consecutive row/column access is anticipated, we suggest using rectangular chunks that are proportional to the dimensions of the matrix.
 \beachmat{} also provides a function to convert an existing HDF5 file to pure row- or column-based chunks (Additional Note~\suppseclayouttest{}), which performs optimally for random row and column access, respectively.
 
 Another benefit of chunking is that the data in each chunk can be compressed using filters such as ZLIB and SZIP.
@@ -385,9 +384,10 @@ If the input is in the simple matrix format, one might assume that there is enou
 whereas if the input is a \code{HDF5Matrix}, one could presume that the output would be similarly large, thus requiring a \code{HDF5Matrix} representation for the results.
 This means that results of processing in C++ can be readily returned in the most suitable representation for manipulation in R.
  
-Note that the layout considerations described for HDF5-backed input are equally applicable to HDF5-backed output.
-If the matrix is to be filled by row or column, the layout should be set to reflect this write access pattern for best performance.
-This can be achieved by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by the \beachmat{} API in the C++ code.
+Note that the layout considerations described for read access to HDF5-backed input are equally applicable to HDF5-backed output.
+If rows/columns are to be filled consecutively, we suggest using rectangular chunks that are proportional to the dimensions of the matrix (Additional Note~\suppseclayoutoptim{}).
+For random write access, pure column- or row-based chunks are more suitable.
+Chunk dimensions can be specified directly with the \textit{beachmat} API; or by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by \beachmat{} in the C++ code.
 
 %As an aside, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
 %In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
@@ -417,9 +417,9 @@ These results demonstrate that the strengths and weaknesses of the different rep
         \caption{}
     \end{subfigure}
     \caption{Access times for various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
-        (a) Column access time for each representation.
+        (a) Column access time for each representation, based on calculation of column sums.
         For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
-        (b) Row access time for each representation, based on calculation of row sums.
+        (b) Row access time for each representation.
         For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
         Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
     }
@@ -427,8 +427,8 @@ These results demonstrate that the strengths and weaknesses of the different rep
 \end{figure}
 
 \subsection*{Analysis of the very large 10X data set}
-To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in the C++ code.
-We then applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
+To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in their C++ code.
+We applied these functions to the 1 million neuron data set from 10X Genomics (see Methods).
 First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
 The vast majority of cells were identified as being in G1 phase (Figure~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
 Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
@@ -533,9 +533,8 @@ MLS was funded by The German Network for Bioinformatics Infrastructure (de.NBI) 
 \subsection*{Access timings with simulated data}
 Double-precision dense matrices of a specified dimension were filled with values sampled from a standard normal distribution.
 By default, all dense matrices were constructed in the simple format.
-Double-precision CSC matrices of a specified dimension and density were generated with the \code{rsparsematrix} function from the \textit{Matrix} package. 
-These were constructed as \code{dgCMatrix} instances.
-Conversion of each matrix object into other representations was performed prior to timing access with the C++ APIs.
+Double-precision CSC matrices of a specified dimension and density were generated as \code{dgCMatrix} instances, using the \code{rsparsematrix} function from the \textit{Matrix} package.
+Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
 
 To time row and column access with \beachmat{} and other APIs, we wrote a C++ function that computes the sum of values in each row or column, respectively.
 Calculation of the row/column sums ensures that each entry of the row/column is visited in order to use its value.
@@ -559,7 +558,7 @@ Column- and row-wise chunking were used for timing column and row access, respec
 We downloaded the 1 million neuron data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons}, obtained 15 June 2017).
 We used the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}) to compute metrics for each cell, including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
 Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median value for all cells in the same sequencing library.
-After filtering out the low-quality cells, we constructed a \code{HDF5Matrix} with column-based chunks using the \textit{HDF5Array} package.
+After filtering out the low-quality cells, we converted the count data into a \code{HDF5Matrix} with column-based chunks using the \textit{HDF5Array} package.
 
 To call cell cycle phase, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
 This was performed over three cores to reduce computational time.
@@ -576,7 +575,7 @@ Assuming that most genes were not highly variable, we tested whether the residua
 Highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
 To reduce computational time, the severity of the multiple testing correction and to avoid discreteness when fitting the trend, we only considered genes with an average count above 0.01.
 
-We used a simple approach to performing PCA on a large matrix.
+We used a simple approach to perform PCA on a very large matrix.
 After subsetting the expression matrix by the detected HVGs, we mean-centred and standardized the expression vector for each gene.
 We randomly selected 10000 cells and coerced the expression profiles into a simple matrix.
 This was used as input into the \code{prcomp} function to obtain the loading vectors.
