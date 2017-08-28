@@ -136,11 +136,12 @@ Similar issues are encountered outside of transcriptomics, with single-cell ATAC
 This results in even more data compared to gene-level expression values.
 
 It is fair to say that the R programming language \cite{R} is the premier tool of choice for statistical data analysis.
-R provides well-designed, rigorously-tested implementations of a large variety of statistical methods.
+R provides well-designed, rigorously-tested, open-source implementations of a large variety of statistical and numerical procedures.
 Its interactive nature makes it easy for newcomers to learn and lends itself to data exploration and research, while its programming features allow more experienced users to readily assemble complex analyses.
-It is also extensible through the installation of optional packages, often contributed by the research community, which provide implementations of bespoke methods targeted to specific scientific problems.
-In particular, the Bioconductor project \cite{gentleman2004bioconductor} supports a number of packages for biological data analysis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
-Packages are usually written in R but can also include compiled code (e.g., in C/C++ or Fortran), which is beneficial for computationally intensive tasks where high performance is required.
+It is also extensible through the installation of optional ``packages", often contributed by the research community, which provide implementations of bespoke methods targeted to specific scientific problems.
+In particular, the Bioconductor project \cite{gentleman2004bioconductor} provides a number of packages for biological data analysis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
+An increasing number of Bioconductor packages implement established and novel methods for single-cell `omics data analysis \cite{trapnell2014dynamics,lun2016pooling,mccarthy2017scater,finak2015mast}, making R/Bioconductor a key platform for processing and exploring single-cell data sets.
+Packages are mostly written in R but can also include compiled code (e.g., in C/C++ or Fortran) for computationally intensive tasks where high performance is required.
 For C++ code, this process is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
 
 In its simplest form, a scRNA-seq data set consists of a count matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
