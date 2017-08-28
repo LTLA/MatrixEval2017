@@ -155,11 +155,26 @@ In general, this requires some numerical analysis to account for the discrete na
 We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $S \ge \max\{R\sqrt{C}, C\sqrt{R}\}$.
 Once the smallest $S$ is obtained, the largest $P$ and $Q$ are easily determined.
 
+%%% OVERVIEW:
 % 3 and 4 require that PQ >= C and PQ >= R
 % 1 and 2 require that S >= CP and S >= RQ
-% Assuming R >=C, let S = RC^0.5 (derived by setting PQ = max(R, C) and assuming S = CP = RQ).
-% P = S/C = R/C^0.5 and Q = S/R = C^0.5, thus satisfying 1 and 2.
-% PQ = R >= C, thus satisfying 3 and 4.
+
+% Assume R >= C and RQ >= CP. 
+% This means that we need PQ >= R and S >= RQ.
+% The smallest value of S occurs at the smallest value of Q (as R is constant).
+% The smallest value of Q is either CP/R or R/P. 
+% If R/P >= CP/R, we get P <= R/C^0.5, which means that Q >= C^0.5.
+% If R/P <= CP/R, we get P >= R/C^0.5, which means that Q >= C^0.5.
+% Either way, this means that the smallest value of S is RC^0.5.
+
+% Now assume that R <= C and RQ >= CP.
+% This means that we need PQ >= C and S >= RQ.
+% The smallest value of Q is now either C/P or CP/R.
+% If C/P >= CP/R, we get P <= R^0.5, which means that Q >= C/R^0.5
+% If C/P <= CP/R, we get P >= R^0.5, which means that Q >= C/R^0.5.
+% Either way, this means that the smallest value of S is CR^0.5.
+%
+% By symmetry, we would get these two options if we swapped R <=> C and P <=> Q.
 
 \subsection{Worked example of choosing chunk settings}
 Say that we have a matrix $X$ with 20000 rows and 50000 columns.
