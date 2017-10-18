@@ -207,8 +207,8 @@ This includes the details of each matrix representation, its memory footprint an
 \end{figure}
 
 \subsection*{Performance with simple matrices}
-By default, R stores matrices as one-dimensional arrays of length $N_rN_c$, where $N_r$ and $N_c$ are the number of rows and columns, respectively.
-This is done in column-major format, i.e., the matrix entry $(x, y)$ corresponds to array element $x + N_ry$ (assuming zero-based indexing).
+By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
+This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
 We refer to this format as a ``simple matrix''.
 The simple matrix is easy to manipulate and the time required for data access is linear with respect to the number of rows/columns (Supplementary Figure~\suppfigsimpleaccess{}).
 However, its memory footprint is directly proportional to its length.
@@ -232,20 +232,20 @@ This avoids making a copy and allows for some optimization in certain scenarios.
 
 \subsection*{Performance with sparse matrices}
 The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format (Supplementary Figure~\suppfigsparseschem{}).
-Consider that every non-zero entry in this matrix is characterized by a triplet: row $x$, column $y$ and value $v$.
-To convert this into the CSC format, entries are sorted in order of increasing $x + N_ry$.
-All entries with the same value of $y$ are now grouped together in the ordered sequence.
-We refer to each column-based group as $G_y$, the entries of which are sorted internally in order of increasing $x$.
-The representation is further compressed by discarding $y$ from each triplet.
-All entries from the same column are at consecutive locations of the ordered sequence, so only the start position of $G_y$ on the sequence needs to be stored for each column.
+Consider that every non-zero entry in a sparse matrix can be characterized by a triplet: row $i$, column $j$ and data value $x$.
+To convert this into the CSC format, entries are sorted in order of increasing $i + mj$.
+All entries with the same value of $j$ are now grouped together in the ordered sequence.
+We refer to each column-based group as $G_j$, the entries of which are sorted internally in order of increasing $i$.
+The representation is further compressed by discarding $j$ from each triplet.
+All entries from the same column are at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
-This reduces memory usage to $s_IN_c + (s_I + s_v) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_v$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
+This reduces memory usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
 For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their simpler ``dense'' counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
 The CSC format simplifies data access by imposing structure on the non-zero entries.
-When accessing a particular column $y$, all corresponding entries in $G_y$ can be quickly extracted by taking the relevant part of the ordered sequence.
+When accessing a particular column $j$, all corresponding entries in $G_j$ can be quickly extracted by taking the relevant part of the ordered sequence.
 For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\suppfigsparsecol{}).
 This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
 As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
@@ -253,15 +253,15 @@ We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also
 This provides faster column-level access than the \beachmat{} API as no copying of data is performed -- see above for a related discussion with simple matrices.
 
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
-If a row is requested, a binary search on $x$ needs to be performed within $G_y$ for each column $y$, which requires an average time proportional to $\log(N_r)$.
-In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $N_r$ elements ahead on the one-dimensional array.
+If a row is requested, a binary search needs to be performed on the values of $i$ in $G_j$ for each column $j$, which requires an average time proportional to $\log(m)$.
+In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
-If row $r$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $x$ in $G_y$ that is not less than $r$.
-When $r+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
+If row $i$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than $i$.
+When $i+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
 This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}).
 Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search; if less, we use the indices to set the end of the search. 
-This reduces the search space and the amount of computational work for large $N_r$.
+This reduces the search space and the amount of computational work for large $m$.
 
 % We don't use CSR format because dgRMatrix objects are not supported much by Matrix.
 % Otherwise, we would probably recommend people to convert to dgRMatrix types if they know that they need row access later.
@@ -288,7 +288,7 @@ This reduces the search space and the amount of computational work for large $N_
 
 Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with simple matrices (Figure~\ref{fig:sparserow}a).
 This is not surprising as there is simply less work to do with dense matrices.
-The exception is with large matrices of low density (Figure~\ref{fig:sparserow}b), where the cost of retrieving non-contiguous blocks of memory from a dense matrix exceeds the cost of handling both $x$ and $v$ per non-zero entry in a sparse matrix.
+The exception is with large matrices of low density (Figure~\ref{fig:sparserow}b), where the cost of retrieving non-contiguous blocks of memory from a dense matrix exceeds the cost of handling both $i$ and $x$ per non-zero entry in a sparse matrix.
 Row access of either representation with \beachmat{} is also faster than that of sparse matrices with \textit{RcppArmadillo}.
 For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for data access from sparse matrices.
@@ -342,7 +342,7 @@ For example, in a row-chunked layout, each chunk would correspond to a row of th
 Each chunk is always read (or written) in its entirety by the HDF5 library, even when only a portion of the chunk is requested.
 Chunking is required for fast access to data, \textit{provided that the layout is consistent with the expected access pattern}.
 For example, a row-chunked layout allows fast access to each row, as only one chunk needs to be read from disk to load the relevant data into memory.
-However, access to any given column is very slow, as the value of each element in the column must be obtained by reading every row chunk in its entirety, i.e., $N_r$ reads in total.
+However, access to any given column is very slow, as the value of each element in the column must be obtained by reading every row chunk in its entirety, i.e., $m$ reads in total.
 In practice, both row and column accesses are often required (e.g., to access gene- and cell-level scRNA-seq data), which means that the file layout must be carefully chosen to allow for these orthogonal access patterns.
 
 The choice of file layout is the responsibility of the process that constructs the HDF5 file.
