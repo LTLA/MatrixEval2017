@@ -73,20 +73,20 @@ This behaviour allows efficient access to consecutive rows or columns in the HDF
 However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
 
 \subsection{Selecting the size of the chunk cache}
-Assume that we have a chunk cache containing $S$ data values (this will have to be multiplied by the size of each value in bytes to obtain the actual cache size).
-Denote the number of rows and columns of our matrix as $R$ and $C$, respectively. 
-We further assume that these data are stored in a chunked layout, where the number of rows and columns in each chunk is $P$ and $Q$, respectively.
+Assume that we have a chunk cache containing $s$ data values (this needs to be multiplied by the size of each value in bytes to obtain the actual cache size).
+Denote the number of rows and columns of our matrix as $m$ and $n$, respectively. 
+We further assume that these data are stored in a chunked layout, where the number of rows and columns in each chunk is $p$ and $q$, respectively.
 
-The chunk size $S$ should be chosen so that it can hold all chunks lying across a row or column.
-Each chunk contains $PQ$ values, and each row and column overlaps $\myceil{C/Q}$ and $\myceil{R/P}$ chunks, respectively.
+The chunk size $s$ should be chosen so that it can hold all chunks lying across a row or column.
+Each chunk contains $pq$ values, and each row and column overlaps $\myceil{n/q}$ and $\myceil{m/p}$ chunks, respectively.
 This reflects the fact that each chunk is stored in its entirety, even at the right/bottom edges of the matrix where each chunk may not be completely filled.
 For row access, this means that 
 \begin{equation}
-S \ge \myceil{C/Q}PQ \;, 
+s \ge \myceil{n/q}pq \;, 
 \end{equation}
 i.e., all chunks overlapping a particular row are held in memory. Simliarly, for column access, 
 \begin{equation}
-S \ge \myceil{R/P}PQ \;.
+s \ge \myceil{m/p}pq \;.
 \end{equation}
 This ensures that all chunks overlapping a particular row or column are retained in memory.
 Otherwise, if the cache size is too small, existing chunks in the cache will be evicted before the current row or column is fully read.
@@ -98,95 +98,95 @@ The chunk cache works by hashing the chunks according to their location in a one
 Consider a ``meta-matrix'' of chunks, where each chunk in the original matrix constitutes one entry in the meta-matrix.
 A meta-row consists of all chunks along one row of this meta-matrix.
 Similarly, a meta-column consists of all chunks along one column of the meta-matrix. 
-Denote the number of meta-rows and meta-columns as $R_0$ and $C_0$, respectively.
+Denote the number of meta-rows and meta-columns as $m_0$ and $n_0$, respectively.
 Now, flatten the meta-matrix into a one-dimensional array of chunks, organized in row-major format.
 The first chunk is assigned a hash index of 1 (technically 0, but we will use 1-based indexing for simplicity here).
 The next chunk is assigned a hash index of 2, and so on.
-When the hash index exceeds the number of cache slots $N$, it is reset to 1 for the next chunk.
+When the hash index exceeds the number of cache slots $v$, it is reset to 1 for the next chunk.
 This continues until a hash index is assigned to all entries of the meta-matrix.
 
 The hash indices are important as two chunks with the same hash index cannot co-exist in the chunk cache.
-This means that $N$ must be carefully chosen to ensure that all chunks in a meta-row or a meta-column have unique hash indices.
+This means that $v$ must be carefully chosen to ensure that all chunks in a meta-row or a meta-column have unique hash indices.
 Otherwise, an existing chunk in the cache will be evicted by a newer chunk with the same hash index.
 This would require the re-reading of the data in the older chunk when accessing the next row/column, defeating the purpose of the cache.
-For a meta-row, guaranteeing unique indices is trivial as $N$ only needs to be chosen to be greater than or equal to $C_0$.
+For a meta-row, guaranteeing unique indices is trivial as $v$ only needs to be chosen to be greater than or equal to $n_0$.
 
 For a meta-column, more care is required.
 Consider the first chunk lying in the first meta-column with a hash index of 1.
-The hash index of 1 will only return to the first meta-column when the sequence $\{1, \ldots, N\}$ has been repeated enough times $m$ such that $mN$ is the smallest multiple of $C_0$.
+The hash index of 1 will only return to the first meta-column when the sequence $\{1, \ldots, v\}$ has been repeated enough times $r$ such that $rv$ is the smallest multiple of $n_0$.
 Prior to this, all assigned values of the first meta-column will be unique.
 This is obvious because non-unique values of the hash index in the first meta-column would imply an existing repeating structure, which is not possible without repeating the hash index of 1.
 (The same logic can be applied to any other value of the hash index in any other meta-column.)
-As the number of rows covered by $mN$ is equal to $mN/C_0$, we simply need to choose $N$ such that $mN/C_0 \ge R_0$.
+As the number of rows covered by $rv$ is equal to $rv/n_0$, we simply need to choose $v$ such that $rv/n_0 \ge m_0$.
 This ensures that the hash index can never repeat itself for a given meta-column before hash indices are assigned to all entries in the meta-matrix.
-The most direct approach is to set $N = kC_0 + 1$  where $k \in \mathbf{N}^+$ and $kC_0 +1 \ge R_0$.
-This guarantees that the lowest common multiple of $N$ and $C_0$ is their product, and that $mN/C_0 \ge R_0$.
+The most direct approach is to set $v = kn_0 + 1$  where $k \in \mathbf{N}^+$ and $kn_0 +1 \ge m_0$.
+This guarantees that the lowest common multiple of $v$ and $n_0$ is their product, and that $rv/n_0 \ge m_0$.
 
 % Note that in the actual implementation, the meta rows are columns and vice versa.
 % This is because rhdf5 internally transposes the data so that HDF5's row-major becomes R's column-major.
 
 \subsection{Choosing the chunk dimensions}
-The preceding text assumes that the chunk dimensions $P$ and $Q$ were set beforehand.
+The preceding text assumes that the chunk dimensions $p$ and $q$ were set beforehand.
 This is the case for existing HDF5 files, where the chunk layout must be specified during data set creation.
 However, for new files, we have an opportunity to choose the chunk dimensions to optimize data access.
 
-The number of disk reads involved in accessing each row is equal to the number of chunks across a row of the matrix, i.e., $\myceil{C/Q}$.
-Once these are loaded into the cache, no more reads are required to access the next $P-1$ rows, i.e., data are held in memory for all $P$ rows simultaneously.
+The number of disk reads involved in accessing each row is equal to the number of chunks across a row of the matrix, i.e., $\myceil{n/q}$.
+Once these are loaded into the cache, no more reads are required to access the next $p-1$ rows, i.e., data are held in memory for all $p$ rows simultaneously.
 For comparison, consider a layout containing row chunks, i.e., each chunk is an entire row.
 This provides the most efficient access to any single row as one read obtains all and only that row's data.
-To access $P$ rows from a row-chunked layout, $P$ reads would be required.
-Thus, for accessing consecutive rows with $P \times Q$ chunks, it is possible to perform as well as or better than the row-chunked layout if 
+To access $p$ rows from a row-chunked layout, $p$ reads would be required.
+Thus, for accessing consecutive rows with $p \times q$ chunks, it is possible to perform as well as or better than the row-chunked layout if 
 \begin{equation}
-\myceil{C/Q} \le P \;.
+\myceil{n/q} \le p \;.
 \end{equation}
-The same logic applies to column access, where $\myceil{R/P}$ reads are required to store data for $Q$ consecutive columns.
-A layout with pure column chunks would require $Q$ reads to access the same data.
+The same logic applies to column access, where $\myceil{m/p}$ reads are required to store data for $q$ consecutive columns.
+A layout with pure column chunks would require $q$ reads to access the same data.
 If 
 \begin{equation}
-\myceil{R/P} \le Q \;,
+\myceil{m/p} \le q \;,
 \end{equation}
 we can also outperform the column-chunked layout for accessing data in consecutive columns.
-Thus, by choosing $P$ and $Q$ to satisfy Inequalities~3 and 4, we can use a single file layout to achieve data access performance similar to or better than that of pure column- or row-based chunking.
+Thus, by choosing $p$ and $q$ to satisfy Inequalities~3 and 4, we can use a single file layout to achieve data access performance similar to or better than that of pure column- or row-based chunking.
 
-Obviously, any arbitrarily large $P$ and $Q$ will satisfy Inequalities~3 and 4.
+Obviously, any arbitrarily large $p$ and $q$ will satisfy Inequalities~3 and 4.
 To avoid this, we use Inequalities~1 and 2 to determine the minimum chunk cache size.
-The aim is to satisfy all of the inequalities while minimizing $S$ to reduce the memory overhead.
+The aim is to satisfy all of the inequalities while minimizing $s$ to reduce the memory overhead.
 In general, this requires some numerical analysis to account for the discrete nature of the dimensions.
-We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $S \ge \max\{R\sqrt{C}, C\sqrt{R}\}$.
-Once the smallest $S$ is obtained, the largest $P$ and $Q$ are easily determined.
+We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $s \ge \max\{m\sqrt{n}, n\sqrt{m}\}$.
+Once the smallest $s$ is obtained, the largest $p$ and $q$ are easily determined.
 
-%%% OVERVIEW:
-% 3 and 4 require that PQ >= C and PQ >= R
-% 1 and 2 require that S >= CP and S >= RQ
+%%% OVEmVIEW:
+% 3 and 4 require that pq >= n and pq >= m
+% 1 and 2 require that s >= np and s >= mq
 
-% Assume R >= C and RQ >= CP. 
-% This means that we need PQ >= R and S >= RQ.
-% The smallest value of S occurs at the smallest value of Q (as R is constant).
-% The smallest value of Q is either CP/R or R/P. 
-% If R/P >= CP/R, we get P <= R/C^0.5, which means that Q >= C^0.5.
-% If R/P <= CP/R, we get P >= R/C^0.5, which means that Q >= C^0.5.
-% Either way, this means that the smallest value of S is RC^0.5.
+% Assume m >= n and mq >= np. 
+% This means that we need pq >= m and s >= mq.
+% The smallest value of s occurs at the smallest value of q (as m is constant).
+% The smallest value of q is either np/m or m/p. 
+% If m/p >= np/m, we get p <= m/n^0.5, which means that q >= n^0.5.
+% If m/p <= np/m, we get p >= m/n^0.5, which means that q >= n^0.5.
+% Either way, this means that the smallest value of s is mn^0.5.
 
-% Now assume that R <= C and RQ >= CP.
-% This means that we need PQ >= C and S >= RQ.
-% The smallest value of Q is now either C/P or CP/R.
-% If C/P >= CP/R, we get P <= R^0.5, which means that Q >= C/R^0.5
-% If C/P <= CP/R, we get P >= R^0.5, which means that Q >= C/R^0.5.
-% Either way, this means that the smallest value of S is CR^0.5.
+% Now assume that m <= n and mq >= np.
+% This means that we need pq >= n and s >= mq.
+% The smallest value of q is now either n/p or np/m.
+% If n/p >= np/m, we get p <= m^0.5, which means that q >= n/m^0.5
+% If n/p <= np/m, we get p >= m^0.5, which means that q >= n/m^0.5.
+% Either way, this means that the smallest value of s is nm^0.5.
 %
-% By symmetry, we would get these two options if we swapped R <=> C and P <=> Q.
+% By symmetry, we would get these two options if we swapped m <=> n and p <=> q.
 
 \subsection{Worked example of choosing chunk settings}
-Say that we have a matrix $X$ with 20000 rows and 50000 columns.
-Our approach suggests that we should choose $S$ as being greater than $50000\sqrt{20000} \approx 7071068$ for optimal access.
-We set $S=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB for double-precision values.
-Our chunk dimensions are $P = S/50000 = 160$ and $Q = S/20000 = 400$.
+Say that we have a matrix with 20000 rows and 50000 columns.
+Our approach suggests that we should choose $s$ as being greater than $50000\sqrt{20000} \approx 7071068$ for optimal access.
+We set $s=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB for double-precision values.
+Our chunk dimensions are $p = s/50000 = 160$ and $q = s/20000 = 400$.
 In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
 
-\textit{beachmat} provides functions to perform the above calculations given $R$ and $C$.
-However, \textit{beachmat} will not automatically use the computed $P$ and $Q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
+\textit{beachmat} provides functions to perform the above calculations given $m$ and $n$.
+However, \textit{beachmat} will not automatically use the computed $p$ and $q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
 This is because the optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
-The choice of $P$ and $Q$ above is only optimized for consecutive row and column accesses, while the actual access pattern might be random (see Section~\ref{sec:random}).
+The choice of $p$ and $q$ above is only optimized for consecutive row and column accesses, while the actual access pattern might be random (see Section~\ref{sec:random}).
 Thus, the chunk dimensions must be manually chosen by the user/developer.
 Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
 
@@ -218,13 +218,13 @@ However, the best layout is not clear at the time of file creation, especially f
 Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
 
 The \beachmat{} strategy implements a simple approach to converting an existing HDF5 file to a layout using row- or column-based chunks.
-Consider an existing file with chunk dimensions of $(P_1, Q_1)$. 
-Assume that we want to obtain a new file with chunk dimensions of $(1, Q_2)$, i.e., row-wise chunks containing $Q_2$ values.
-We extract a submatrix of size $(P_1, Q_2)$ from the existing file and write it to the new file with the row-chunked layout.
-This is repeated with the next submatrix of the same size along the next $Q_2$ columns, and the process is iterated until all columns have been read and written for these $P_1$ rows.
-The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $Q_2$ is not a multiple of $Q_1$.
-We repeat this procedure with the next $P_1$ rows until the entire file has been processed.
-To convert to column-based chunks of size $(P_2, 1)$, a submatrix of size $(P_2, Q_1)$ is extracted and written to file; this is repeated for the next $P_2$ rows, until all rows have been processed for these $Q_1$ columns; and the process is repeated with the next $Q_1$ columns until the entire file is rewritten.
+Consider an existing file with chunk dimensions of $(p_1, q_1)$. 
+Assume that we want to obtain a new file with chunk dimensions of $(1, q_2)$, i.e., row-wise chunks containing $q_2$ values.
+We extract a submatrix of size $(p_1, q_2)$ from the existing file and write it to the new file with the row-chunked layout.
+This is repeated with the next submatrix of the same size along the next $q_2$ columns, and the process is iterated until all columns have been read and written for these $p_1$ rows.
+The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $q_2$ is not a multiple of $q_1$.
+We repeat this procedure with the next $p_1$ rows until the entire file has been processed.
+To convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
 The idea is to load read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
