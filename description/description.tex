@@ -148,19 +148,18 @@ In its simplest form, a scRNA-seq data set consists of a count matrix where each
 This can be most directly represented in R as a simple matrix, where each entry is explicitly stored in memory.
 Alternatively, it can be represented as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
 This exploits the fact that scRNA-seq protocols have low capture efficiencies \cite{grun2015design} -- RNA molecules are present in cells but are not reverse-transcribed to cDNA for sequencing, resulting in a preponderance of zeroes in the final count matrix.
-Droplet-based protocols also exhibit very low sequencing depth per cell, further increasing the sparsity of the data.
-Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are extracted into memory upon request.
-In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that code written by users (or other developers) can be agnostic to the exact representation of the matrix.
-This simplifies the development process and improves interoperability.
+Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are loaded into memory upon request.
+In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
+This simplifies software development and improves interoperability.
 
 Unfortunately, for compiled code written in statically typed languages like C++, the details of the matrix representation must be known during compilation.
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
 Writing multiple versions for each representation is difficult and unsustainable when more representations become available.
 The alternative is to perform all processing in R to exploit the availability of common methods.
 However, this is an unappealing option for high-performance code.
-For scRNA-seq data stored in matrices, consider the most common access pattern, i.e., looping across all cells or genes and performing operations on the cell- or gene-specific expression profiles.
-Looping in R is notoriously slow, requiring at least an order of magnitude more time than general-purpose languages like C++ or Python.
-This increases the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
+R is often slower than C++ by at least an order of magnitude for arbitrary programming tasks that cannot be ``vectorized'', i.e., made to operate on all elements of a vector at once.
+This includes common procedures in scRNA-seq data analysis such as looping across all cells or genes and performing arbitrarily complex operations on the cell- or gene-specific expression profiles.
+The use of R alone would increase the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
 It would clearly be preferable to implement critical functions (including loops) in compiled code wherever possible.
 
 % One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
