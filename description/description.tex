@@ -80,11 +80,16 @@
 \newcommand{\suppfigsimpleaccess}{1}
 \newcommand{\suppfigsparseschem}{2}
 \newcommand{\suppfigsparsecol}{3}
-\newcommand{\suppfighdflayout}{4-5}
-\newcommand{\suppfigtenx}{6}
+\newcommand{\suppfigsparserow}{4}
+\newcommand{\suppfighdfspeed}{5}
+\newcommand{\suppfighdflayout}{6-7}
 
-\newcommand{\suppseclayoutoptim}{1}
-\newcommand{\suppseclayouttest}{2}
+\newcommand{\suppsecsimple}{1.1}
+\newcommand{\suppsecsparse}{1.2}
+\newcommand{\suppsechdfmat}{1.3}
+\newcommand{\suppsecother}{1.4}
+\newcommand{\suppseclayoutoptim}{2}
+\newcommand{\suppseclayouttest}{3}
 
 % document begins here
 \begin{document}
@@ -118,6 +123,7 @@ Recent advances in single-cell RNA sequencing have dramatically increased the nu
 This provides unparalleled resolution to study cellular heterogeneity within biological processes such as differentiation.
 However, the explosion of data that are generated from such experiments poses a challenge to the existing computational infrastructure for statistical data analysis.
 In particular, large matrices holding expression values for each gene in each cell require sparse or file-backed representations for manipulation with the popular R programming language.
+These alternative representations are not easily compatible with high-performance C++ code used for computationally intensive tasks in existing R packages.
 Here, we describe a C++ interface named \beachmat{}, which enables agnostic data access from various matrix representations.
 This allows package developers to write efficient C++ code that is interoperable with simple, sparse and HDF5-backed matrices, amongst others.
 We perform simulations to examine the performance of \beachmat{} on each matrix representation, 
@@ -128,39 +134,36 @@ and we demonstrate how \beachmat{} can be incorporated into the code of other pa
 
 \section*{Introduction}
 Recent advances in single-cell RNA sequencing (scRNA-seq) technologies have led to an explosion in the quantity of data that can be generated in routine experiments.
-Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow expression profiles to be captured for each of thousands to millions of cells.
-It hardly needs to be said that this is a substantial amount of data -- the expression profile for each cell consists of a measure of expression for each transcriptionally active (and polyadenylated) genomic feature, of which there are usually 10,000-40,000 in the current genome annotations for most model organisms.
-Careful computational analysis is critical to extract meaningful biology from these data, but the sheer volume strains existing pipelines and methods designed for single-cell data processing.
-The challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
+Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow transcriptome-wide expression profiles involving 10,000-40,000 genes to be captured in each of thousands to millions of cells.
+Careful computational analysis is critical to extract meaningful biology from these data, but their sheer volume strains existing pipelines and methods designed for single-cell data processing.
+The data analysis challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
 Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
-This results in even more data compared to gene-level expression values.
 
-It is fair to say that the R programming language \cite{R} is the premier tool of choice for statistical data analysis.
-R provides well-designed, rigorously-tested, open-source implementations of a large variety of statistical and numerical procedures.
-Its interactive nature makes it easy for newcomers to learn and lends itself to data exploration and research, while its programming features allow more experienced users to readily assemble complex analyses.
-It is also extensible through the installation of optional ``packages", often contributed by the research community, which provide implementations of bespoke methods targeted to specific scientific problems.
-In particular, the Bioconductor project \cite{gentleman2004bioconductor} provides a number of packages for biological data analysis, many of which focus on the processing of genomics data \cite{huber2015orchestrating}.
-An increasing number of Bioconductor packages implement established and novel methods for single-cell `omics data analysis \cite{trapnell2014dynamics,lun2016pooling,mccarthy2017scater,finak2015mast}, making R/Bioconductor a key platform for processing and exploring single-cell data sets.
-Packages are mostly written in R but can also include compiled code (e.g., in C/C++ or Fortran) for computationally intensive tasks where high performance is required.
-For C++ code, this process is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
+The statistical programming language R \cite{R} is a key platform for processing and exploring scRNA-seq data sets.
+R provides efficient, rigorously tested, open-source implementations of many statistical and numerical procedures.
+Its interactive nature lends itself to data exploration and research, while its programming features allow assembly of complex analyses.
+It is also extensible through the installation of optional ``packages", often contributed by the research community, which contain bespoke methods for specific scientific problems.
+In particular, the Bioconductor project \cite{gentleman2004bioconductor,huber2015orchestrating} provides packages for biological data analysis, many of which implement established methods for single-cell `omics data analysis \cite{trapnell2014dynamics,lun2016pooling,mccarthy2017scater,finak2015mast}
+Packages are mostly written in R but can also include native code (in C/C++ or Fortran) for computationally intensive tasks.
+Use of native C++ code is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
 
-In its simplest form, a scRNA-seq data set consists of a count matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
-This can be most directly represented in R as a simple matrix, where each entry is explicitly stored in memory.
+In its simplest form, a scRNA-seq data set consists of a matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
+This is most directly represented in R as a simple matrix, where each entry is explicitly stored in memory in a dense contiguous array.
 Alternatively, it can be represented as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
-This exploits the fact that scRNA-seq protocols have low capture efficiencies \cite{grun2015design} -- RNA molecules are present in cells but are not reverse-transcribed to cDNA for sequencing, resulting in a preponderance of zeroes in the final count matrix.
-Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data set is stored on disk and parts of it are loaded into memory upon request.
+This exploits the low capture efficiencies of current scRNA-seq protocols \cite{grun2015design} that are responsible for the high frequency of zeroes in the data.
+Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data are stored on disk and parts of it are loaded into memory upon request.
 In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
 This simplifies software development and improves interoperability.
 
-Unfortunately, for compiled code written in statically typed languages like C++, the details of the matrix representation must be known during compilation.
+Unfortunately, for native code written in statically typed languages like C++, the details of the matrix representation must be known during compilation.
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
-Writing multiple versions for each representation is difficult and unsustainable when more representations become available.
+Writing multiple versions for different representations is difficult and unsustainable when more representations become available.
 The alternative is to perform all processing in R to exploit the availability of common methods.
 However, this is an unappealing option for high-performance code.
 R is often slower than C++ by at least an order of magnitude for arbitrary programming tasks that cannot be ``vectorized'', i.e., made to operate on all elements of a vector at once.
 This includes common procedures in scRNA-seq data analysis such as looping across all cells or genes and performing arbitrarily complex operations on the cell- or gene-specific expression profiles.
 The use of R alone would increase the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
-It would clearly be preferable to implement critical functions (including loops) in compiled code wherever possible.
+It would clearly be preferable to implement critical functions (including loops) in native code wherever possible.
 
 % One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
 % However, this involves some costs on its own, e.g., memory allocations that were previously one-offs need to be re-performed.
@@ -174,23 +177,12 @@ We also demonstrate how \beachmat{} can be used by other Bioconductor packages t
 By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing scRNA-seq and other large matrix data.
 
 \section*{Description of the \beachmat{} API}
-
-\subsection*{Overview of the API}
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
-We define a base class that implements common methods for all matrix representations.
+We define a base class that implements common methods for all representations.
 Each specific representation is associated with a derived C++ class that provides customized implementations of the access methods.
 The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Figure~\ref{fig:beachoverview}).
-A function is then called to produce its C++ equivalent, returning a pointer to the base class.
-This pointer is the same regardless of the R representation and can be used in downstream code to achieve run-time polymorphism.
-
-While the API is agnostic to the matrix representation, it still needs to know the type of data that are stored in the matrix.
-We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
-The same methods are available for all classes of each data type, improving their ease of use for developers.
-Briefly, when access to a specific row or column (or a slice thereof) is requested, the API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
-A request for a specific entry of the matrix will directly return the corresponding data value.
-
-In the following text, we discuss some of the specifics of the \beachmat{} API implementation.
-This includes the details of each matrix representation, its memory footprint and the computational time required for data access.
+\beachmat{} then produces a corresponding C++ object, returning a pointer to the base class.
+This pointer is the same regardless of the representation and can be used in downstream C++ code to achieve run-time polymorphism.
 
 \begin{figure}[btp]
     \begin{center}
@@ -205,177 +197,40 @@ This includes the details of each matrix representation, its memory footprint an
     \label{fig:beachoverview}
 \end{figure}
 
-\subsection*{Performance with simple matrices}
-By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
-This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
-We refer to this format as a ``simple matrix''.
-The simple matrix is easy to manipulate and the time required for data access is linear with respect to the number of rows/columns (Supplementary Figure~\suppfigsimpleaccess{}).
-However, its memory footprint is directly proportional to its length.
-For example, a double-precision matrix containing data for 10000 genes in each of one million cells would require 80 GB of RAM to store in memory.
-This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
-Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.
-Thus, the utility of simple matrices is limited to relatively small scRNA-seq data sets.
+Access to matrix data is achieved with common methods in the base class that have specialized implementations in each derived class. 
+When access to a specific row or column (or a slice thereof) is requested, the \beachmat{} API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
+This strategy provides the greatest flexibility for downstream applications, by allowing in-place modifications to vector elements and guaranteeing contiguous data storage. 
+In addition, a request for a specific entry of the matrix will directly return the corresponding data value.
 
-% While R doesn't copy if you don't modify, it _does_ copy if you do modify, rather tha overwriting the old version.
-% Consider computing log2-normalized counts; it's four copies (first transpose, division, second transpose, log-transformation).
+While the \beachmat{} API is agnostic to the matrix representation, it still needs to know the type of data that are stored in the matrix.
+We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
+The same methods are available for all classes of each data type, improving their ease of use for developers.
 
-We compare the access speed of the \beachmat{} API to that of a reference implementation using only \textit{Rcpp}.
-Both row and column access via \beachmat{} require 20-50\% more time compared to the reference (Supplementary Figure~\suppfigsimpleaccess{}).
-This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former cannot be faster than the latter.
-Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector} by default.
-The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
-Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in memory.
-Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
-Nonetheless, for read-only access to column data in a simple matrix, developers can direct \beachmat{} to return an iterator directly to the start of the column.
-This avoids making a copy and allows for some optimization in certain scenarios.
+Currently, \beachmat{} supports data access from several representations including:
+\begin{itemize}
+    \item Simple R matrices, constructed with \texttt{matrix} or using the \texttt{dgeMatrix} class from the \textit{Matrix} R package.
+        Here, data are stored as a contiguous dense array in column-major format.
+        We demonstrate that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation for accessing data from these matrices 
+        (Additional Note~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
+    \item Sparse matrices in compressed sparse column-orientated format (Additional Note~\suppsecsparse{}, Supplementary Figure~\suppfigsparseschem{}), 
+        implemented in the \texttt{dgCMatrix} class from the \textit{Matrix} R package.
+        This representation only stores non-zero values, which is memory-efficient for single-cell genomics data with many dropouts.
+        Indeed, for low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\suppfigsparsecol{}).
+        We use a caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Supplementary Figure~\suppfigsparserow{}).
+        We show that \beachmat{} provides faster row-level data access than the \textit{RcppArmadillo} API \cite{eddelbuettel2014arma}.
+    \item File-backed matrices using the hierarchical data format (HDF5) \cite{hdf5}, 
+        implemented in the \texttt{HDF5Matrix} class from the \textit{HDF5Array} R package (Additional Note~\suppsechdfmat{}).
+        This stores the entire data set in a HDF5 file, only retrieving subsets into memory upon request.
+        As a result, it is very memory-efficient but much slower than the other representations (Supplementary Figure~\suppfighdfspeed{}).
+        A key determinant of access speed is the layout of the HDF5 file, where data can be split into ``chunks'' for easier retrieval.
+        To improve performance, \beachmat{} automatically tunes the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Figures~\suppfighdflayout{}, Additional Notes~\suppseclayoutoptim{}-\suppseclayouttest{}).
+        We also derive a suitable choice of chunk dimensions when consecutive row or column access is expected.
+\end{itemize}
+Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Aditional Note~\suppsecother{} for details).
 
-\subsection*{Performance with sparse matrices}
-The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format (Supplementary Figure~\suppfigsparseschem{}).
-Consider that every non-zero entry in a sparse matrix can be characterized by a triplet: row $i$, column $j$ and data value $x$.
-To convert this into the CSC format, entries are sorted in order of increasing $i + mj$.
-All entries with the same value of $j$ are now grouped together in the ordered sequence.
-We refer to each column-based group as $G_j$, the entries of which are sorted internally in order of increasing $i$.
-The representation is further compressed by discarding $j$ from each triplet.
-All entries from the same column are at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
-(The end position of one column is simply the start position of the next column.)
-This reduces memory usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
-For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their simpler ``dense'' counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
-
-% Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
-
-The CSC format simplifies data access by imposing structure on the non-zero entries.
-When accessing a particular column $j$, all corresponding entries in $G_j$ can be quickly extracted by taking the relevant part of the ordered sequence.
-For low-density sparse matrices, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\suppfigsparsecol{}).
-This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
-As the density of non-zero entries increases, column access becomes slower but is still comparable to that of simple matrices.
-We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also handles sparse matrices via the \code{SpMat} class.
-This provides faster column-level access than the \beachmat{} API as no copying of data is performed -- see above for a related discussion with simple matrices.
-
-Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
-If a row is requested, a binary search needs to be performed on the values of $i$ in $G_j$ for each column $j$, which requires an average time proportional to $\log(m)$.
-In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
-To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
-If row $i$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than $i$.
-When $i+1$ is accessed, we simply need to check if each of the indices should be incremented by one.
-This avoids the need to perform a new binary search and reduces the row access time substantially (Figure~\ref{fig:sparserow}).
-Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
-If greater, we use the stored indices to set the start of the binary search; if less, we use the indices to set the end of the search. 
-This reduces the search space and the amount of computational work for large $m$.
-
-% We don't use CSR format because dgRMatrix objects are not supported much by Matrix.
-% Otherwise, we would probably recommend people to convert to dgRMatrix types if they know that they need row access later.
-% Of course, this is a moot point if you need row _and_ column access in the same C++ function.
-
-\begin{figure}[btp]
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_density.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_nrow.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Consecutive row access times for CSC matrices using a naive binary search or the binary search with caching method in \beachmat{}.
-        For reference, access time for an equivalent simple matrix in \beachmat{} (simple) is also shown.
-        (a) Access times with respect to the density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
-        (b) Access times with respect to the number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
-        Horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:sparserow}
-\end{figure}
-
-
-Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with simple matrices (Figure~\ref{fig:sparserow}a).
-This is not surprising as there is simply less work to do with dense matrices.
-The exception is with large matrices of low density (Figure~\ref{fig:sparserow}b), where the cost of retrieving non-contiguous blocks of memory from a dense matrix exceeds the cost of handling both $i$ and $x$ per non-zero entry in a sparse matrix.
-Row access of either representation with \beachmat{} is also faster than that of sparse matrices with \textit{RcppArmadillo}.
-For example, for a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row; \beachmat{} with dense matrices takes 29.2 milliseconds; and \textit{RcppArmadillo} takes 1921.4 milliseconds.
-These results motivate the use of \beachmat{} for data access from sparse matrices.
-
-For highly sparse data, it is also possible to design efficient algorithms that completely avoid processing the zeroes.
-To accommodate this, \beachmat{} can be directed to return the indices and values of all non-zero elements in each row or column.
-In contrast, the default acccess methods will return all values of a row/column.
-This ensures that the API is consistent with non-sparse representations but is inefficient for operations where zeroes can be ignored.
-The user-level code can switch between different algorithms depending on whether the input matrix is sparse or dense.
-In general, we recommend this approach only for performance-critical parts of the code.
-Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
-
-\subsection*{Performance with HDF5-based matrices}
-For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
-We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
-Each large matrix is stored as a dataset in a HDF5 file on disk, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
-This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from disk upon request.
-Each \code{HDF5Matrix} instance provides methods to mimic a simple matrix object and allows users to manipulate the matrix in real time without the need to load all of the data into memory.
-Compression of data in the HDF5 file also ensures that the disk space requirements are manageable, even if multiple large matrices need to be generated to hold intermediate results throughout the course of the analysis.
-
-The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
-Specifically, \beachmat{} directly accesses data from the underlying HDF5 file through the official HDF5 C++ API, which has been wrapped in the \textit{Rhdf5lib} package for portability and re-usability in the R package framework.
-This means that even very large data sets can be accessed in C++, using the same code for simple and sparse matrix representations.
-However, data access is inevitably slower than that from a simple matrix as the data need to be read from disk at regular intervals.
-We observed a 20-fold increase in the time required to access each column and a 40-fold increase in the time required to access each row (Figure~\ref{fig:hdf5time}).
-This suggests that the \code{HDF5Matrix} representation should be used sparingly -- if possible, smaller data sets should use alternative in-memory representations for faster access.
-
-\begin{figure}[bt]
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_ncol.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_nrow.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Access times for a HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks.
-        Times for a simple matrix are shown for comparison.
-        (a) Column access time with respect to the number of columns, for a dense matrix with 10000 rows.
-        (b) Row access time with respect to the number of rows, for a dense matrix with 1000 columns.
-        Horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:hdf5time}
-\end{figure}
-
-A key determinant of the performance of the \code{HDF5Matrix} representation is the layout of data in the HDF5 file.
-There are two layout choices for large matrices: contiguous or chunked.
-In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of simple matrices in memory.
-In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
-For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
-Each chunk is always read (or written) in its entirety by the HDF5 library, even when only a portion of the chunk is requested.
-Chunking is required for fast access to data, \textit{provided that the layout is consistent with the expected access pattern}.
-For example, a row-chunked layout allows fast access to each row, as only one chunk needs to be read from disk to load the relevant data into memory.
-However, access to any given column is very slow, as the value of each element in the column must be obtained by reading every row chunk in its entirety, i.e., $m$ reads in total.
-In practice, both row and column accesses are often required (e.g., to access gene- and cell-level scRNA-seq data), which means that the file layout must be carefully chosen to allow for these orthogonal access patterns.
-
-The choice of file layout is the responsibility of the process that constructs the HDF5 file.
-This can be the original data provider; the developer whose function returns a \code{HDF5Matrix}; or a user who coerces their data into a \code{HDF5Matrix}.
-As such, the chunking scheme is generally outside of \beachmat{}'s control, preventing the API from automatically choosing the optimal layout for the requested access pattern.
-Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns -- see Additional Note~\suppseclayoutoptim{} for more information.
-This permits fast extraction of both row- and column-based data from the same layout (Figure~\ref{fig:hdf5time}, Supplementary Figures~\suppfighdflayout{}, Additional Note~\suppseclayouttest{}).
-\beachmat{} also provides a function to convert an existing HDF5 file to pure row- or column-based chunks (Additional Note~\suppseclayouttest{}), which performs optimally for random row and column access, respectively.
-
-Another benefit of chunking is that the data in each chunk can be compressed using algorithms such as ZLIB and SZIP.
-This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
-The use of smaller files reduces the risk that disk space will be exceeded during the course of an analysis.
-This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or intermediate results.
-
-\subsection*{Other matrix types}
-While the matrix representations described above are the most commonly used for storing scRNA-seq data, \beachmat{} can be easily extended to support other representations.
-For example, the packed symmetric representation from the \textit{Matrix} package only stores the upper or lower half of a symmetric matrix.
-This provides an efficient representation of distance matrices, which are often used to cluster cells based on their expression profiles.
-\beachmat{} supports row and column access of data from packed symmetric matrices through the same interface that is used for the other representations.
-
-\beachmat{} also supports data access from \code{RleMatrix} instances from the \textit{DelayedArray} package.
-The \code{RleMatrix} stores its values as a column-major run-length encoding, where stretches of the same value in the one-dimensional array are stored as a single run.
-This reduces memory usage in a more general manner than a sparse matrix, especially for matrices with many small but non-zero counts.
-As with CSC matrices, \beachmat{} caches the row indices to speed up consecutive row access.
-
-Another option for storing matrices on disk is to use the \textit{bigmemory} package \cite{kane2013scalable}.
-This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to an on-disk representation.
-In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of the HDF5 specification and portability of HDF5 files across systems.
-Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
-
-\subsection*{Storing matrix output}
 In addition to accessing data in existing matrices, the \beachmat{} API allows values generated in C++ to be stored in various matrix representations for output to R.
 For integer, logical, double-precision and character data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those generated in R.
-Logical and double-precision data can also be stored in CSC format, where only true or non-zero values are retained in \code{lgCMatrix} or \code{dgCMatrix} instances, respectively.
+Logical and double-precision data can also be stored in sparse format, where only true or non-zero values are retained in \code{lgCMatrix} or \code{dgCMatrix} instances, respectively.
 (The \textit{Matrix} package does not support sparse integer or character matrices, so these are ignored.)
 
 The output representation can either be explicitly specified in the code, or it can be automatically chosen to match some input representation.
@@ -384,11 +239,11 @@ If the input is in the simple matrix format, one might assume that there is enou
 whereas if the input is a \code{HDF5Matrix}, one could presume that the output would be similarly large, thus requiring a \code{HDF5Matrix} representation for the results.
 This means that results of processing in C++ can be readily returned in the most suitable representation for manipulation in R.
  
-Note that the layout considerations described for read access to HDF5-backed input are equally applicable to HDF5-backed output.
-If rows/columns are to be filled consecutively, we suggest using rectangular chunks that are proportional to the dimensions of the matrix (Additional Note~\suppseclayoutoptim{}).
-For random write access, pure column- or row-based chunks are more suitable.
-Chunk dimensions can be specified directly with the \textit{beachmat} API; or by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by \beachmat{} in the C++ code.
-
+%Note that the layout considerations described for read access to HDF5-backed input are equally applicable to HDF5-backed output.
+%If rows/columns are to be filled consecutively, we suggest using rectangular chunks that are proportional to the dimensions of the matrix (Additional Note~\suppseclayoutoptim{}).
+%For random write access, pure column- or row-based chunks are more suitable.
+%Chunk dimensions can be specified directly with the \textit{beachmat} API; or by using functions from the \textit{HDF5Array} package to set the global chunking dimensions in R, which will be respected by \beachmat{} in the C++ code.
+%
 %As an aside, the use of \beachmat{} may not be optimal for sparse inputs to functions that preserve sparsity (and thus return sparse outputs).
 %In such cases, a faster algorithm could be obtained by directly modifying the non-zero entries, rather than considering the zeroes during input and discarding them during output.
 %Of course, this would involve writing two different versions of code for sparse and non-sparse input/output, which is the scenario that \beachmat{} was designed to avoid.
