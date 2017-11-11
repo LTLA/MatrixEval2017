@@ -312,23 +312,25 @@ The same methods are available for all classes of each data type, improving thei
 
 Currently, \beachmat{} supports data access from several representations including:
 \begin{itemize}
-    \item Simple R matrices, constructed with \texttt{matrix} or using the \texttt{dgeMatrix} class from the \textit{Matrix} R package.
+    \item Simple R matrices, constructed with \texttt{matrix} or using the \texttt{dgeMatrix} class from the \textit{Matrix} package.
         Here, data are stored as a contiguous dense array in column-major format.
         We demonstrate that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation for accessing data from these matrices 
         (Supplementary Sections~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
     \item Sparse matrices in compressed sparse column-orientated format (Supplementary Section~\suppsecsparse{}, Supplementary Figure~\suppfigsparseschem{}), 
-        implemented in the \texttt{dgCMatrix} class from the \textit{Matrix} R package.
+        implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
         This representation only stores non-zero values, which is memory-efficient for single-cell genomics data with many dropouts.
         However, the more complex format means that data access from sparse matrices is generally slower than simple matrices (Supplementary Figure~\suppfigsparsecol{}).
-        We use a caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Supplementary Figure~\suppfigsparserow{}).
+        We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Supplementary Figure~\suppfigsparserow{}).
         We also show that \beachmat{} provides faster row-level data access than the \textit{RcppArmadillo} API \cite{eddelbuettel2014arma}.
     \item File-backed matrices using the hierarchical data format (HDF5) \cite{hdf5}, 
-        implemented in the \texttt{HDF5Matrix} class from the \textit{HDF5Array} R package (Supplementary Section~\suppsechdfmat{}).
+        implemented in the \texttt{HDF5Matrix} class from the \textit{HDF5Array} package (Supplementary Section~\suppsechdfmat{}).
         This stores the entire data set in a HDF5 file, only retrieving subsets into memory upon request.
         As a result, it is very memory-efficient but much slower than the other representations (Supplementary Figure~\suppfighdfspeed{}).
         A key determinant of access speed is the layout of the HDF5 file, where data can be split into ``chunks'' for easier retrieval.
-        To improve performance, \beachmat{} automatically tunes the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Figures~\suppfighdflayout{}, Supplementary Sections~\suppseclayoutoptim{}-\suppseclayouttest{}).
-        We also derive a suitable choice of chunk dimensions when consecutive row or column access is expected.
+        Once read, chunks are typically cached in memory to avoid redundant retrieval of data from the same chunk in adjacent rows or columns.
+        To improve performance, \beachmat{} automatically tunes the parameters of the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Figures~\suppfighdflayout{}, Supplementary Sections~\suppseclayoutoptim{}-\suppseclayouttest{}).
+        We provide functions to choose suitable chunk dimensions during file creation, when consecutive row or column access is expected downstream;
+        as well as functions to convert to file layouts that are optimal for random row or column access.
 \end{itemize}
 Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Supplementary Section~\suppsecother{} for details).
 
