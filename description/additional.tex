@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{amsmath}
 \usepackage[margin=3cm]{geometry}
+\usepackage[hidelinks]{hyperref}
 
 \makeatletter 
 \renewcommand{\fnum@figure}{Supplementary \figurename~\thefigure}
@@ -60,6 +61,23 @@ $^3$European Molecular Biology Laboratory (EMBL), Genome Biology Unit, 69117 Hei
 \providecommand{\myceil}[1]{\left \lceil #1 \right \rceil }
 
 \section{Performance of beachmat on different matrices}
+
+\subsection{Access timings with simulated data}
+Double-precision dense matrices of a specified dimension were filled with values sampled from a standard normal distribution.
+By default, all dense matrices were constructed in the simple format.
+Double-precision CSC matrices of a specified dimension and density were generated as \code{dgCMatrix} instances, using the \code{rsparsematrix} function from the \textit{Matrix} package.
+Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
+
+To time row and column access with \beachmat{} and other APIs, we wrote a C++ function that computes the sum of values in each row or column, respectively.
+Calculation of the row/column sums ensures that each entry of the row/column is visited in order to use its value.
+This means that each API has to do some work, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
+Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
+
+Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
+This was repeated 10 times with new matrices, and the average time and standard error were computed for each access method. 
+Row and column access times were evaluated with respect to the numbers of rows and columns, respectively.
+For sparse matrices, times were also recorded with respect to the density of non-zero entries.
+In all cases, standard errors were negligible and not plotted for clarity.
 
 \subsection{Performance with simple matrices}
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
@@ -370,7 +388,53 @@ An alternative option would be to store scRNA-seq data in both row- and column-c
 While this has some uses, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
 Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and disk accesses must be performed twice.
 
-\small
+\section{Methods for real data processing}
+
+\subsection{Access timings with the brain data}
+scRNA-seq data from the mouse brain study \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex/}.
+Counts were read into R and converted into a double-precision simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
+For each representation, timings of the calculation of row or column sums were performed as previously described.
+This was repeated 10 times to obtain an average time.
+Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
+
+\subsection{Analysis of the 1.3 million brain cell data set}
+We downloaded the 1.3 million brain cell data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons}, obtained 15 June 2017).
+We used the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}) to compute metrics for each cell, including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
+Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median value for all cells in the same sequencing library.
+After filtering out the low-quality cells, we converted the count data into a \code{HDF5Matrix} with column-based chunks using the \textit{HDF5Array} package.
+
+To call cell cycle phase, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
+This was performed over three cores to reduce computational time.
+To compute size factors, we used the \code{computeSumFactors} method after splitting the data set into chunks of 2000-3000 cells.
+Cells in each chunk were normalized using the deconvolution method \cite{lun2016pooling}, and size factors were calibrated across chunks by normalizing the chunk-specific pseudo-cells.
+The size factor for each cell was used to compute normalized log-expression values \cite{lun2016stepbystep}, which were represented in a new \code{HDF5Matrix} object.
+Note that, when computing the size factors, we only used genes with an average count above 0.1 (as calculated by the \code{calcAverage} function in \textit{scater}).
+This ensures that the pooled expression profiles will not be dominated by zeros.
+
+To identify highly variable genes, we used the \code{trendVar} and \code{decomposeVar} functions from \textit{scran}.
+We computed the variance of the normalized log-expression values for each gene while blocking on the sequencing library of origin.
+We fitted a mean-dependent trend to the variances to model the mean-variance relationship.
+Assuming that most genes were not highly variable, we tested whether the residual from the trend for each gene was significantly greater than zero.
+Highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
+To reduce computational time, the severity of the multiple testing correction and to avoid discreteness when fitting the trend, we only considered genes with an average count above 0.01.
+
+We used a simple approach to perform PCA on a very large matrix.
+After subsetting the expression matrix by the detected HVGs, we mean-centred and standardized the expression vector for each gene.
+We randomly selected 10000 cells and coerced the expression profiles into a simple matrix.
+This was used as input into the \code{prcomp} function to obtain the loading vectors.
+We then projected all cells onto the space defined by the first two loading vectors to obtain PC1 and PC2 coordinates for all cells.
+This approach assumes the selected 10000 cells provide a good representation of the variance structure in the full population, allowing the approximate loading vectors to be obtained by PCA on the smaller matrix.
+More sophisticated strategies such as randomized PCA \cite{halko2011finding} could also be used, but a correct and efficient implementation of such algorithms for \code{HDF5Matrix} objects is beyond the scope of this paper.
+
+\subsection{Details of the computing environment}
+All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.0 and Biocondcutor 3.6.
+On this machine, the 10X data analysis required approximately 4 hours for quality control and construction of the \code{HDF5Matrix};
+22 hours for cell cycle phase assignment;
+8 hours for calculation of size factors and generation of normalized expression values;
+10 hours for detecting highly variable genes;
+and 8 hours for PCA.
+Only the phase assignment step was run on multiple cores.
+
 \bibliography{ref}
 \bibliographystyle{unsrt}
 
