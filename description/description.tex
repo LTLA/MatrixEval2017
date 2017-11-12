@@ -180,6 +180,8 @@
 \newcommand{\suppsecother}{1.5}
 \newcommand{\suppseclayoutoptim}{2}
 \newcommand{\suppseclayouttest}{3}
+\newcommand{\suppsecrealzeisel}{4.1}
+\newcommand{\suppsecrealtenx}{4.2}
 
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
@@ -333,6 +335,7 @@ Currently, \beachmat{} supports data access from several representations includi
         as well as functions to convert to file layouts that are optimal for random row or column access.
 \end{itemize}
 Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Supplementary Section~\suppsecother{} for details).
+As a general rule, matrix representations that occupy more memory generally provide faster data access, as data do not need to be unpacked or retrieved from disk.
 
 In addition to accessing data in existing matrices, the \beachmat{} API allows C++ code to store data in various representations for output to R.
 For integer, logical, double-precision and character data, simple and HDF5-backed matrices can be constructed that are indistinguishable from those generated in R.
@@ -361,16 +364,17 @@ The \beachmat{} API provides a natural solution by moving the entire procedure i
 \section*{Results}
 
 \subsection*{Access times for a small brain data set}
-We evaluated the performance of \beachmat{} with the different matrix representations on real data, using the count matrix from a scRNA-seq study of the mouse brain \cite{zeisel2015brain}.
-This data set contains integer expression values for 19972 genes in each of 3005 cells, of which 18\% are non-zero.
-These dimensions are not particularly large, especially in the context of droplet-based experiments that routinely generate data for tens of thousands of cells.
-However, the small size of this data set ensures that each of the matrix representations -- including those that are stored in memory -- can be easily evaluated and compared.
+We evaluated the performance of \beachmat{} with the different matrix representations on real scRNA-seq data from a study of the mouse brain by Zeisel \textit{et al.} \cite{zeisel2015brain} (Supplementary Section~\suppsecrealzeisel{}). 
+This data set contains integer expression values for 19972 genes in each of 3005 brain cells, derived from different regions of the brain and consisting of a diverse range of cell types.
+Only 18\% of expression values in the matrix are non-zero.
+The Zeisel \textit{et al.} data set is not particularly large, especially in the context of droplet-based experiments that routinely generate transcriptome-wide data for tens of thousands of cells.
+However, for our purposes, the smaller number of cells in this data set is desirable as it means that each of the matrix representations -- including those that are stored in memory -- can be easily evaluated and compared.
 
-The performances of the different representations on the brain data set mirror the results with simulated data (Supplementary Section~\suppsecsim{}).
-Row and column accesses from a simple matrix are the fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}).
-HDF5-backed matrices provide the slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for simple matrices and 130 MB for sparse matrices).
-The on-disk size of the HDF5 file is also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance. 
-These results demonstrate that the strengths and weaknesses of the different representations are recapitulated with real data.
+We converted the Zeisel \textit{et al.} data to the various matrix representations and measured the access speed for the row- or column-level data with \beachmat{}.
+We observed similar results to those obtained with simulated data, recapitulating the different trade-offs between speed and memory usage across representations.
+Specifically, row and column accesses from a simple matrix were fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}).
+HDF5-backed matrices provided slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for simple matrices and 130 MB for sparse matrices).
+The on-disk size of the HDF5 file was also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
@@ -391,22 +395,21 @@ These results demonstrate that the strengths and weaknesses of the different rep
     \label{fig:zeisel}
 \end{figure}
 
-An appropriate choice of matrix representation requires consideration of the trade-off between speed and memory.
-Matrices that occupy more memory generally provide faster data access, as data do not need to be unpacked or retrieved from disk.
-However, this may not be practical for very large data sets.
-High-performance computing systems have their limits, especially in academic environments with many users where high-resource jobs are difficult to schedule.
+An appropriate choice of matrix representation depends on the context in which it is used.
+We could use purely in-memory representations for optimal access speed, but this may not be practical for very large data sets.
+Even high-performance computing systems have their limits, especially in academic environments with many users where high-resource jobs are difficult to schedule.
 Sparse representations also become ineffective if sparsity-destroying operations (e.g., mean-centering during PCA) are applied.
 In such cases, it may be preferable to sacrifice speed for reduced memory consumption by using file-backed representations such as \code{HDF5Matrix}.
 By incorporating \beachmat{} into the C++ code, an R package can dynamically accept different matrix types appropriate for the size of the data set and computing environment.
 
 \subsection*{Analysis of the very large 10X data set}
-To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use the \beachmat{} API in their C++ code.
-We applied these functions to the 1.3 million brain cell data set from 10X Genomics (see Methods).
+To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use \beachmat{} in their C++ code.
+We applied these functions to the 1.3 million brain cell data set from 10X Genomics (Supplementary Section~\suppsecrealtenx{}).
 First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
-The vast majority of cells were identified as being in G1 phase (Figure~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
+Most cells were identified as being in G1 phase (Figure~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
 Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
 The size factor for each cell was generally well-correlated with the library size (Figure~\ref{fig:tenx}b).
-However, a small proportion of cells have size factors that are much lower than expected based on their library sizes, and there is a modest amount of scatter around the size factor-library size trend.
+However, a few cells have size factors that are much smaller than expected based on their library sizes, and there is a modest amount of scatter around the size factor-library size trend.
 This is consistent with composition effects \cite{robinson2010scaling} caused by differential gene expression between cell subpopulations.
 
 \begin{figure}
