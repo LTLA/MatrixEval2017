@@ -173,8 +173,8 @@
 \newcommand{\suppfighdfspeed}{5}
 \newcommand{\suppfighdflayout}{6-7}
 
-\newcommand{\suppsecsim}{1}
-\newcommand{\suppsecsimple}{1.1-1.2}
+\newcommand{\suppsecsimdesign}{1.1}
+\newcommand{\suppsecsimple}{1.2}
 \newcommand{\suppsecsparse}{1.3}
 \newcommand{\suppsechdfmat}{1.4}
 \newcommand{\suppsecother}{1.5}
@@ -312,15 +312,17 @@ While the \beachmat{} API is agnostic to the matrix representation, it still nee
 We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
 The same methods are available for all classes of each data type, improving their ease of use for developers.
 
-Currently, \beachmat{} supports data access from several representations including:
+Currently, \beachmat{} supports data access from a number of widely used matrix representations.
+Using simulated data, we measured the speed of data access from each representation with \beachmat{} (Supplementary Section~\suppsecsimdesign{}).
+This includes:
 \begin{itemize}
-    \item Simple R matrices, constructed with \texttt{matrix} or using the \texttt{dgeMatrix} class from the \textit{Matrix} package.
-        Here, data are stored as a contiguous dense array in column-major format.
+    \item Simple R matrices, constructed with the base \texttt{matrix} function or using the \texttt{dgeMatrix} class from the \textit{Matrix} package.
+        Here, data are stored in memory as a contiguous dense array in column-major format.
         We demonstrate that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation for accessing data from these matrices 
-        (Supplementary Sections~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
+        (Supplementary Section~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
     \item Sparse matrices in compressed sparse column-orientated format (Supplementary Section~\suppsecsparse{}, Supplementary Figure~\suppfigsparseschem{}), 
         implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
-        This representation only stores non-zero values, which is memory-efficient for single-cell genomics data with many dropouts.
+        This representation only stores non-zero values in memory, which is highly efficient for single-cell genomics data with many dropouts.
         However, the more complex format means that data access from sparse matrices is generally slower than simple matrices (Supplementary Figure~\suppfigsparsecol{}).
         We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Supplementary Figure~\suppfigsparserow{}).
         We also show that \beachmat{} provides faster row-level data access than the \textit{RcppArmadillo} API \cite{eddelbuettel2014arma}.
