@@ -53,12 +53,12 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
             }
         }
 
-        writeToFile(Type="sparse", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="sparse (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=row.time, file="timings_sparse_row.txt", overwrite=overwrite)
         overwrite <- FALSE 
         writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_row.txt", overwrite=overwrite)
-        writeToFile(Type="naive", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="sparse (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=naive.time, file="timings_sparse_row.txt", overwrite=overwrite)
 
         if (!skip.arma) { 
