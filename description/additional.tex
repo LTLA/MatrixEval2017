@@ -131,7 +131,7 @@ In contrast, obtaining the next element in a row of a dense matrix can be done i
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
 If row $i$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than $i$.
 When $i+1$ is requested, we simply need to check if each of the indices should be incremented by one.
-This avoids the need to perform a new binary search and reduces the row access time substantially (Supplementary Figure~\ref{fig:sparserow}).
+Caching avoids the need for a new binary search and reduces the row access time substantially (Supplementary Figure~\ref{fig:sparserow}).
 Even when the row access pattern is random, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search; if less, we use the indices to set the end of the search. 
 This reduces the search space and the amount of computational work for large $m$.
@@ -487,7 +487,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_col_ncol.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo}, compared to an equivalent simple matrix with \beachmat{} (simple).
+    \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo}, compared to an equivalent simple matrix with \beachmat{}.
         (a) Access times with respect to the density of non-zero entries as a percentage of all entries, for a matrix with 10000 rows and 1000 columns.
         (b) Access times with respect to the number of columns, for a matrix with 10000 rows and 1\% density.
         Horizontal dotted lines represent 2-fold increases in time.
@@ -504,8 +504,8 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Consecutive row access times for CSC matrices using a naive binary search or the binary search with caching method in \beachmat{}.
-        For reference, access time for an equivalent simple matrix in \beachmat{} (simple) is also shown.
+    \caption{Consecutive row access times for CSC matrices using a naive binary search or the caching method in \beachmat{}.
+        For reference, access time for an equivalent simple matrix in \beachmat{} is also shown.
         (a) Access times with respect to the density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
         (b) Access times with respect to the number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
         Horizontal dotted lines represent 2-fold increases in time.
