@@ -475,6 +475,14 @@ We anticipate that \beachmat{} will be useful to developers of novel computation
 While we have focused on scRNA-seq in this paper, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
 We will also continue to develop \beachmat{} to support data access from new formats such as Loom for scRNA-seq data (\url{http://loompy.org/}).
 
+We note that, for big single-cell data, the utility of \beachmat{} for R package development ultimately depends on the scalability of the underlying algorithms for processing millions or even billions of cells.
+Most existing methods for scRNA-seq data analysis are designed to handle thousands of cells at best.
+Fortunately, we can make use of the existing expertise in the Bioconductor community to improve scalability.
+Highly multiplexed flow and mass cytometry experiments routinely generate low-dimensional data for millions of cells,
+and many Bioconductor packages are already available to analyze and interpret these data \cite{finak2014opencyto,weber2016comparison,lun2017testing}.
+A low-rank representation of scRNA-seq data (e.g., after PCA) is similar to cytometric data in size and structure, suggesting that algorithms used in the latter can also be applied to the former.
+This presents an interesting avenue for future development of software based on \beachmat{}.
+
 All R/C++ code used to perform the simulations and real data analyses are also available on Github (\url{https://github.com/LTLA/MatrixEval2017}).
 
 \section*{Author contributions}
