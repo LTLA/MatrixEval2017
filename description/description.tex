@@ -400,7 +400,7 @@ The on-disk size of the HDF5 file was also relatively small, requiring only 16-2
 An appropriate choice of matrix representation depends on the context in which it is used.
 We could use purely in-memory representations for optimal access speed, but this may not be practical for very large data sets.
 Even high-performance computing systems have their limits, especially in academic environments with many users where high-resource jobs are difficult to schedule.
-Sparse representations also become ineffective if sparsity-destroying operations (e.g., mean-centering during PCA) are applied.
+Sparse representations also become ineffective if sparsity-destroying operations (e.g., mean-centering, batch correction) are applied.
 In such cases, it may be preferable to sacrifice speed for reduced memory consumption by using file-backed representations such as \code{HDF5Matrix}.
 By incorporating \beachmat{} into the C++ code, an R package can dynamically accept different matrix types appropriate for the size of the data set and computing environment.
 
@@ -449,7 +449,7 @@ This is consistent with composition effects \cite{robinson2010scaling} caused by
 We detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
 We identified a number of HVGs (Figure~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} \cite{ kay2011neurod6} and \textit{Sox11} \cite{bergsland2006establishment}. 
-Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using principal components analysis (PCA).
+Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized principal components analysis (PCA) \cite{halko2011finding}.
 Visualization of the first two principal components (PCs) showed clear substructure in the cell population (Figure~\ref{fig:tenx}d), reflecting the diversity of cell types in the mouse brain.
 Indeed, once PCA has been performed, the first 10-100 PCs for each cell can be used as a summary of its expression profile.
 This can be stored as a simple matrix and supplied directly to other R functions for clustering \cite{xu2015identification,csardi2006igraph} or trajectory reconstruction \cite{trapnell2014dynamics}.

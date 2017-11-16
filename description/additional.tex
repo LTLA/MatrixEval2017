@@ -422,21 +422,20 @@ We fitted a mean-dependent trend to the variances to model the mean-variance rel
 Assuming most genes were not highly variable, we tested whether the residual from the trend for each gene was significantly greater than zero.
 After applying the Benjamini-Hochberg correction, highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
 
-We used a simple approach to perform PCA on a very large matrix.
-After subsetting the expression matrix by the detected HVGs, we mean-centred and standardized the expression vector for each gene.
-We randomly selected 10000 cells and coerced the expression profiles into a simple matrix.
-This was used as input into the \code{prcomp} function to obtain the loading vectors.
-We then projected all cells onto the space defined by the first two loading vectors to obtain PC1 and PC2 coordinates for all cells.
-This approach assumes the selected 10000 cells provide a good representation of the variance structure in the full population, allowing the approximate loading vectors to be obtained by PCA on the smaller matrix.
-More sophisticated strategies such as randomized PCA \cite{halko2011finding} could also be used, but a correct and efficient implementation of such algorithms for \code{HDF5Matrix} objects is beyond the scope of this paper.
+We performed randomized PCA \cite{halko2011finding} on the expression matrix for all cells,
+using the \code{rsvd} function in the \textit{BigDataAlgorithms} package (\url{https://github.com/Bioconductor/BigDataAlgorithms}).
+This provides a \code{HDF5Matrix}-compatible version of the randomized SVD implementation in the \textit{rsvd} package (\url{https://cran.r-project.org/package=rsvd}).
+Specifically, we mean-centered the expression matrix and filtered for HVGs before applying \code{rsvd} with a rank of 50.
+Coordinates in the PC space for each cell were manually computed from the U and D matrices, and the percentage of variance explained was computed from the diagonal elements of D.
+Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} or C++ are not used.
 
 \subsection{Details of the computing environment}
-All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.2 and Biocondcutor 3.6.
-On this machine, the 10X data analysis required approximately 4 hours for quality control and construction of the \code{HDF5Matrix};
+All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.2 and Bioconductor 3.6.
+On this machine, the 10X data analysis required approximately 4 hours for quality control;
 22 hours for cell cycle phase assignment (using three cores);
 12 hours for calculation of size factors and generation of normalized expression values;
 24 hours for detecting highly variable genes;
-and 8 hours for the randomized PCA.
+and 30 hours for the randomized PCA.
 
 \bibliography{ref}
 \bibliographystyle{unsrt}
