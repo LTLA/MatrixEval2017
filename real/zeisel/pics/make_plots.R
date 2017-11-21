@@ -12,6 +12,6 @@ pdf("zeisel_row.pdf")
 par(mar=c(7.1, 5.1, 2.1, 2.1))
 row.times <- read.table("../timings_row.txt", header=TRUE, sep="\t")
 barplot(setNames(row.times$Time, row.times$Type), ylab="Time (ms)", cex.axis=1, cex.lab=1.4, cex.names=1.4, 
-        names.arg=sub(" ", "\n", col.times$Type), las=2,
+        names.arg=sub(" ", "\n", row.times$Type), las=2,
         cex.main=1.4, main="Row access")
 dev.off()
