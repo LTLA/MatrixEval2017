@@ -226,15 +226,15 @@ Mike L. Smith\textsuperscript{3}
 \end{flushleft}
 % Please keep the abstract below 300 words
 \section*{Abstract}
-Recent advances in single-cell RNA sequencing have dramatically increased the number of cells that can be profiled in a single experiment.
+Recent advances in single-cell RNA sequencing (scRNA-seq) have dramatically increased the number of cells that can be profiled in a single experiment.
 This provides unparalleled resolution to study cellular heterogeneity within biological processes such as differentiation.
 However, the explosion of data that are generated from such experiments poses a challenge to the existing computational infrastructure for statistical data analysis.
 In particular, large matrices holding expression values for each gene in each cell require sparse or file-backed representations for manipulation with the popular R programming language.
 These alternative representations are not easily compatible with high-performance C++ code used for computationally intensive tasks in existing R packages.
 Here, we describe a C++ interface named \beachmat{}, which enables agnostic data access from various matrix representations.
-This allows package developers to write efficient C++ code that is interoperable with simple, sparse and HDF5-backed matrices, amongst others.
-We perform simulations to examine the performance of \beachmat{} on each matrix representation, 
-and we demonstrate how \beachmat{} can be incorporated into the code of other packages to drive analyses of a very large single-cell data set.
+This allows package developers to write efficient C++ code that is interoperable with simple, sparse and file-backed matrices, amongst others.
+We evaluated the performance of \beachmat{} on each matrix representation using both simulated and real scRNA-seq data, and defined a clear memory/speed trade-off to motivate the choice of an appropriate representation.
+We also demonstrate how beachmat can be incorporated into the code of other packages to drive analyses of a very large scRNA-seq data set.
 
 \linenumbers
 
