@@ -185,7 +185,7 @@ The choice of file layout is the responsibility of the process that constructs t
 This can be the original data provider; the developer whose function returns a \code{HDF5Matrix}; or a user who coerces their data into a \code{HDF5Matrix}.
 As such, the chunking scheme is generally outside of \beachmat{}'s control, preventing the API from automatically choosing the optimal layout for the requested access pattern.
 Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns (Additional Note~\ref{sec:layoutoptim}).
-\beachmat{} also provides a function to quickly convert an existing HDF5 file to a layout using pure row- or column-based chunks (Additional Note~\ref{sec:layouttest}), which performs optimally for random row and column access, respectively.
+\beachmat{} also provides a function to quickly convert an existing HDF5 file to a layout using pure row- or column-based chunks (Additional Note~\ref{sec:random}), which performs optimally for random row and column access, respectively.
 
 Another benefit of chunking is that the data in each chunk can be compressed using algorithms such as ZLIB and SZIP.
 This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
@@ -340,10 +340,7 @@ The choice of $p$ and $q$ above is only optimized for consecutive row and column
 Thus, the chunk dimensions must be manually chosen by the user/developer.
 Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
 
-\section{Performance of different HDF5 file layouts}
-\label{sec:layouttest}
-
-\subsection{Testing with simulated data}
+\subsection{Testing different layouts with simulated data}
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
 For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
 The contiguous layout is the fastest as only one disk read needs to be performed per column (Supplementary Figure~\ref{fig:hdf5layout}).
@@ -357,10 +354,10 @@ We emphasize that rectangular chunking is only slightly slower than row-wise chu
 This highlights the utility of rectangular chunks for both row and column accesses, compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
 The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
 
-\subsection{Dealing with random access}
+\section{Dealing with random access from a \texttt{HDF5Matrix}}
 \label{sec:random}
 
-It should be stressed that these timings were generated with consecutive row and column accesses.
+The timings above were obtained by accessing data from consecutive rows or columns.
 The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will contain the next requested row or column.
 (We omit the situation where the entire matrix is loaded into the cache.
 If this were possible, a simple matrix representation would have sufficed.)
@@ -368,7 +365,7 @@ In such cases, pure row- or column-based chunks may be necessary for optimal per
 However, the best layout is not clear at the time of file creation, especially for scRNA-seq data where it is sensible to access data by gene (row) or cell (column).
 Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
 
-The \beachmat{} strategy implements a simple approach to converting an existing HDF5 file to a layout using row- or column-based chunks.
+The \beachmat{} strategy implements a simple approach to converting an existing HDF5 file to a layout using purely row- or column-based chunks.
 Consider an existing file with chunk dimensions of $(p_1, q_1)$. 
 Assume that we want to obtain a new file with chunk dimensions of $(1, q_2)$, i.e., row-wise chunks containing $q_2$ values.
 We extract a submatrix of size $(p_1, q_2)$ from the existing file and write it to the new file with the row-chunked layout.
@@ -376,7 +373,7 @@ This is repeated with the next submatrix of the same size along the next $q_2$ c
 The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $q_2$ is not a multiple of $q_1$.
 We repeat this procedure with the next $p_1$ rows until the entire file has been processed.
 To convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
-The idea is to load read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
+The idea is to read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
 Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).

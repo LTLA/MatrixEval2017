@@ -171,7 +171,8 @@
 \newcommand{\suppfigsparsecol}{3}
 \newcommand{\suppfigsparserow}{4}
 \newcommand{\suppfighdfspeed}{5}
-\newcommand{\suppfighdflayout}{6-7}
+\newcommand{\suppfighdflayout}{6}
+\newcommand{\suppfighdfrandom}{7}
 
 \newcommand{\suppsecsimdesign}{1.1}
 \newcommand{\suppsecsimple}{1.2}
@@ -179,7 +180,7 @@
 \newcommand{\suppsechdfmat}{1.4}
 \newcommand{\suppsecother}{1.5}
 \newcommand{\suppseclayoutoptim}{2}
-\newcommand{\suppseclayouttest}{3}
+\newcommand{\suppseclayoutrandom}{3}
 \newcommand{\suppsecrealzeisel}{4.1}
 \newcommand{\suppsecrealtenx}{4.2}
 
@@ -332,9 +333,9 @@ This includes:
         As a result, it is very memory-efficient but much slower than the other representations (Supplementary Figure~\suppfighdfspeed{}).
         A key determinant of access speed is the layout of the HDF5 file, where data can be split into ``chunks'' for easier retrieval.
         Once read, chunks are typically cached in memory to avoid redundant retrieval of data from the same chunk in adjacent rows or columns.
-        To improve performance, \beachmat{} automatically tunes the parameters of the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Figures~\suppfighdflayout{}, Supplementary Sections~\suppseclayoutoptim{}-\suppseclayouttest{}).
+        To improve performance, \beachmat{} automatically tunes the parameters of the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Figure~\suppfighdflayout{}, Supplementary Section~\suppseclayoutoptim{}).
         We provide functions to choose suitable chunk dimensions during file creation, when consecutive row or column access is expected downstream;
-        as well as functions to convert to file layouts that are optimal for random row or column access.
+        as well as functions to convert to file layouts that are optimal for random row or column access (Supplementary Figure~\suppfighdfrandom{}, Supplementary Section~\suppseclayoutrandom{}).
 \end{itemize}
 Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Supplementary Section~\suppsecother{} for details).
 As a general rule, matrix representations that occupy more memory generally provide faster data access, as data do not need to be unpacked or retrieved from disk.
