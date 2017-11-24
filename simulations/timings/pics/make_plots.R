@@ -67,12 +67,12 @@ dev.off()
 incoming <- read.table("../timings_sparse_row.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
 incoming$Ngenes <- incoming$Ngenes/1e3
 incoming$Density <- incoming$Density * 100
-incoming <- incoming[incoming$Type!="RcppArmadillo",]
+incoming <- incoming[!incoming$Type %in% c("RcppArmadillo", "RcppEigen"),]
 incoming$Type <- factor(incoming$Type, c("simple", "sparse (cached)", "sparse (naive)"))
 
 pdf("sparse_row_density.pdf")
 subincoming <- incoming[incoming$Ngenes==10,]
-plotter(subincoming, "Density", c("black", "red", "blue"), pch=c(16, 17, 15), xlab="Density (%)", upper=max(subincoming$Tim)*1.1)
+plotter(subincoming, "Density", c("black", "red", "blue"), pch=c(16, 17, 15), xlab="Density (%)", upper=max(subincoming$Time)*1.1)
 dev.off()
 
 pdf("sparse_row_nrow.pdf")

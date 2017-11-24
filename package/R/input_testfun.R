@@ -31,3 +31,11 @@ ArmaRowSum <- function(M) {
 ArmaColSum <- function(M) {
     .Call(cxx_get_numeric_arma_margins, M, 1L)
 }
+
+EigenRowSum <- function(M) {
+    .Call(cxx_get_numeric_arma_margins, M, 2L)
+}
+
+EigenColSum <- function(M) {
+    .Call(cxx_get_numeric_arma_margins, M, 1L)
+}
