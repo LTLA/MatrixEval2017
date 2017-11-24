@@ -1,4 +1,4 @@
-# Simulating row and column access with a base matrix.
+# Simulating row and column access with a sparse matrix.
 
 library(beachtime)
 library(Matrix)
@@ -11,12 +11,13 @@ overwrite <- TRUE
 for (ncells in c(1000, 2000, 5000, 10000)) {
     for (density in c(0.01, 0.05, 0.1, 0.2)) { 
         
-        col.time <- arma.time <- def.time <- numeric(10)
+        col.time <- arma.time <- eigen.time <- def.time <- numeric(10)
         for (it in seq_len(10)) { 
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
             dense.counts <- as.matrix(sparse.counts)
             col.time[it] <- timeExprs(BeachmatColSum(sparse.counts))
             arma.time[it] <- timeExprs(ArmaColSum(sparse.counts))
+            eigen.time[it] <- timeExprs(ArmaColSum(sparse.counts))
             def.time[it] <- timeExprs(BeachmatColSum(dense.counts))
         }
     
@@ -25,6 +26,8 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
         overwrite <- FALSE 
         writeToFile(Type="RcppArmadillo", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=arma.time, file="timings_sparse_col.txt", overwrite=overwrite)
+        writeToFile(Type="RcppEigen", Ngenes=ngenes, Ncells=ncells, Density=density, 
+                    timings=eigen.time, file="timings_sparse_col.txt", overwrite=overwrite)
         writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_col.txt", overwrite=overwrite)
     }
@@ -39,7 +42,7 @@ skip.arma <- FALSE
 for (ngenes in c(10000, 20000, 50000, 100000)) {
     for (density in c(0.01, 0.05, 0.1, 0.2)) { 
 
-        naive.time <- row.time <- arma.time <- def.time <- numeric(10)
+        naive.time <- row.time <- arma.time <- eigen.time <- def.time <- numeric(10)
         for (it in seq_len(10)) { 
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
             dense.counts <- as.matrix(sparse.counts)
@@ -49,6 +52,7 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
 
             # This takes some time, so will only run for the lowest number of genes, and once.
             if (!skip.arma) {
+                eigen.time[it] <- timeExprs(EigenRowSum(sparse.counts), times=1)
                 arma.time[it] <- timeExprs(ArmaRowSum(sparse.counts), times=1)
             }
         }
@@ -64,6 +68,8 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
         if (!skip.arma) { 
             writeToFile(Type="RcppArmadillo", Ngenes=ngenes, Ncells=ncells, Density=density, 
                         timings=arma.time, file="timings_sparse_row.txt", overwrite=overwrite)
+            writeToFile(Type="RcppEigen", Ngenes=ngenes, Ncells=ncells, Density=density, 
+                        timings=eigen.time, file="timings_sparse_row.txt", overwrite=overwrite)
         }
     }
             

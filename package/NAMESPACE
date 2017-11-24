@@ -8,5 +8,6 @@ export(BeachmatRowSum, BeachmatColSum,
     DefaultRowSum, DefaultColSum,
     NaiveSparseRowSum, DirectSimpleRowSum,
     ArmaRowSum, ArmaColSum,
+    EigenRowSum, EigenColSum,
     se, timeExprs, writeToFile)
 
