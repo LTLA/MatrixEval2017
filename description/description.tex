@@ -262,8 +262,8 @@ Another option is to use file-backed representations such as those in the \texti
 In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
 This simplifies software development and improves interoperability.
 
-Unfortunately, \revised{using alternative matrix representations is less straightforward for} compiled code written in statically typed languages like C++.
-\revised{Existing interfaces for passing R matrices into C/C++ require the details of the matrix representation to be specified during compilation.}
+Unfortunately, \revised{the use of alternative matrix representations is less straightforward for} compiled code written in statically typed languages like C++.
+\revised{Existing interfaces for reading R matrices in C/C++ require the details of the matrix representation to be specified during compilation.}
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
 Writing multiple versions for different representations is difficult and unsustainable when more representations become available.
 The alternative is to perform all processing in R to exploit the availability of common methods.
@@ -402,7 +402,7 @@ The size of the HDF5 file was also relatively small, requiring only 16-20 MB of 
 
 An appropriate choice of matrix representation depends on the context in which it is used.
 We could use purely in-\revised{RAM} representations for optimal access speed, but this may not be practical for very large data sets.
-Even high-performance computing systems have their limits, especially in academic environments with many users where high-resource jobs are difficult to schedule.
+Even high-performance computing systems have their limits, \revised{especially when multiple copies of the matrix are generated throughout the course of an analysis.}
 Sparse representations also become ineffective if sparsity-destroying operations (e.g., mean-centering, batch correction) are applied.
 In such cases, it may be preferable to sacrifice speed for reduced memory consumption by using file-backed representations such as \code{HDF5Matrix}.
 By incorporating \beachmat{} into the C++ code, an R package can dynamically accept different matrix types appropriate for the size of the data set and computing environment.
