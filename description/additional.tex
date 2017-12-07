@@ -176,6 +176,7 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
 A key determinant of the performance of the \code{HDF5Matrix} representation is the layout of data in the HDF5 file.
 There are two layout choices for large matrices: contiguous or chunked.
 In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of simple matrices in memory.
+\revised{(Technically, HDF5 uses a row-major format, but a transposition is internally performed when constructing a \code{HDF5Matrix}.)}
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
 For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
 Each chunk is always read from (or written to) file in its entirety by the HDF5 library, even when only a portion of the chunk is requested.
