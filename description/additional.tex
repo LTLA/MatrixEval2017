@@ -86,8 +86,8 @@ In all cases, standard errors were negligible and not plotted.
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
 We refer to this format as a ``simple matrix''.
-The simple matrix is easy to manipulate and the time required to access \revised{all data elements in the matrix} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
-However, \revised{convenient data access comes at the cost of memory usage that} is directly proportional to \revised{the length of the one-dimensional array}.
+The simple matrix is easy to manipulate and the time required to access \revised{all of its data elements} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
+However, \revised{fast data access comes at the cost of random access memory (RAM) usage that} is directly proportional to \revised{the length of the one-dimensional array}.
 For example, a double-precision matrix containing data for 10000 genes in each of one million cells would require 80 GB of RAM.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
 Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.
@@ -101,7 +101,7 @@ Both row and column access via \beachmat{} require 20-50\% more time compared to
 This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former will not be faster than the latter.
 Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector} by default.
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
-Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in memory.
+Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in \revised{RAM}.
 Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
 Nonetheless, for read-only access to column data in a simple matrix, developers can direct \beachmat{} to return an iterator directly to the start of the column.
 This avoids copying and allows for some optimization in certain scenarios.
@@ -115,7 +115,7 @@ We refer to each column-based group as $G_j$, the entries of which are sorted in
 The representation is further compressed by discarding $j$ from each triplet.
 All entries from the same column lie at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
-This reduces memory usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
+This reduces \revised{RAM} usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
 For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their simpler ``dense'' counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
@@ -145,7 +145,7 @@ This reduces the search space and the amount of computational work for large $m$
 
 Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with simple matrices (Supplementary Figure~\ref{fig:sparserow}a).
 This is not surprising as there is less work to do when retrieving data from a simpler representation.
-The exception is with large matrices of low density (Supplementary Figure~\ref{fig:sparserow}b), where the cost of retrieving non-contiguous blocks of memory from a simple matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
+The exception is with large matrices of low density (Supplementary Figure~\ref{fig:sparserow}b), where the cost of retrieving non-contiguous blocks of \revised{RAM} from a simple matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
 Row access of data from sparse matrices with \beachmat{} is also faster than using \textit{RcppArmadillo}.
 For a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} with sparse matrices takes 39.8 milliseconds to access each row and compute the row sums, while \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for general data access from sparse matrices.
@@ -159,7 +159,7 @@ In general, we recommend this approach only for performance-critical parts of th
 Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
 
 \subsection{Performance with HDF5-based matrices}
-For large, non-sparse matrices that do not fit into memory, the most obvious option is to store them on disk and load submatrices into memory as required.
+For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvious option is to store the \revised{the data in a file} and load submatrices into memory as required.
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a dataset in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
@@ -169,7 +169,7 @@ Compression of data in the HDF5 file also ensures that the disk space requiremen
 The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
 Specifically, \beachmat{} directly accesses data from the underlying HDF5 file through the official HDF5 C++ API, which has been wrapped in the \textit{Rhdf5lib} package for portability and re-usability in the R package framework.
 This means that very large data sets can be accessed in C++ with the same code that is used for simple and sparse matrix representations.
-However, data access is inevitably slower than that from a simple matrix as the data need to be read from disk at regular intervals.
+However, data access is inevitably slower than that from a simple matrix as the data need to be read from \revised{file} at regular intervals.
 We observed a 20-fold increase in the time required for column access and a 40-fold increase for row access (Supplementary Figure~\ref{fig:hdf5time}).
 This suggests that the \code{HDF5Matrix} representation should be used sparingly -- if possible, smaller data sets should use alternative in-memory representations for faster access.
 
@@ -180,7 +180,7 @@ In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
 For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
 Each chunk is always read from (or written to) file in its entirety by the HDF5 library, even when only a portion of the chunk is requested.
 Chunking is required for fast access to data, \textit{provided that the layout is consistent with the expected access pattern}.
-For example, a row-chunked layout allows fast access to each row, as only one chunk needs to be read from disk to load the relevant data into memory.
+For example, a row-chunked layout allows fast access to each row, as only one chunk needs to be read from \revised{file} to load the relevant data into memory.
 However, access to any given column is very slow, as the value of each element in the column must be obtained by reading every row chunk in its entirety, i.e., $m$ reads in total.
 In practice, both row and column accesses are often required (e.g., to access gene- and cell-level scRNA-seq data), which means that the file layout must be carefully chosen to allow for these orthogonal access patterns.
 
@@ -191,9 +191,9 @@ Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 ch
 \beachmat{} also provides a function to quickly convert an existing HDF5 file to a layout using pure row- or column-based chunks (Additional Note~\ref{sec:random}), which performs optimally for random row and column access, respectively.
 
 Another benefit of chunking is that the data in each chunk can be compressed using algorithms such as ZLIB and SZIP.
-This decreases the size of the HDF5 file by at least 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse data (9 MB for the same matrix with 1\% non-zero entries).
+\revised{In our simulations, compression reduced} the size of the HDF5 file by 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse \revised{matrices} (9 MB for the same matrix with 1\% non-zero entries).
 The use of smaller files reduces the risk that disk space will be exceeded during the course of an analysis.
-This is important when many on-disk matrices need to be constructed, e.g., to store transformed expression values or intermediate results.
+This is important when many \revised{\code{HDF5Matrix} objects} need to be constructed, e.g., to store transformed expression values.
 
 \subsection{Other matrix types}
 While the matrix representations described above are the most commonly used for storing scRNA-seq data, \beachmat{} can be easily extended to support other representations.
@@ -206,8 +206,8 @@ The \code{RleMatrix} stores its values as a column-major run-length encoding, wh
 This reduces memory usage in a more general manner than a sparse matrix, especially for matrices with many small but non-zero counts.
 As with CSC matrices, \beachmat{} caches the row indices to speed up consecutive row access.
 
-Another option for storing matrices on disk is to use the \textit{bigmemory} package \cite{kane2013scalable}.
-This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to an on-disk representation.
+Another option for \revised{constructing file-backed} matrices is to use the \textit{bigmemory} package \cite{kane2013scalable}.
+This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to a \revised{file in which the data are stored.}
 In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of the HDF5 specification and portability of HDF5 files across systems.
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
@@ -217,11 +217,11 @@ Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big
 \subsection{Overview}
 Matrix data in HDF5 files can be partitioned into chunks \cite{hdf5chunk}, where each chunk is a submatrix of the same dimensions.
 When a particular row or column of the matrix is requested, the HDF5 library will read all chunks that are overlapped by the requested row/column.
-Each chunk is read from disk in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
+Each chunk is read from \revised{file} in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
 This is wasteful as more data needs to be processed than is required for the current request.
-To improve performance, chunks are cached in memory once they are read.
+To improve performance, \revised{the HDF5 library will cache a small number of} chunks in memory once they are read \revised{from file}.
 This means that they do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
-Chunks are then evicted from the cache once the memory limit is exceeded or if the hash indices overlap.
+Chunks are then evicted from the cache once the \revised{cache size} limit is exceeded or if the hash indices \revised{of different chunks} overlap \revised{(see Section~\ref{sec:slotchoice})}.
 This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
 However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
 
@@ -247,6 +247,7 @@ Otherwise, if the cache size is too small, existing chunks in the cache will be 
 This would preclude the use of the cache to rapidly load data for the next row or column.
 
 \subsection{Choosing the number of slots}
+\label{sec:slotchoice}
 The chunk cache works by hashing the chunks according to their location in a one-dimensional array.
 Consider a ``meta-matrix'' of chunks, where each chunk in the original matrix constitutes one entry in the meta-matrix.
 A meta-row consists of all chunks along one row of this meta-matrix.
@@ -281,14 +282,14 @@ This guarantees that the lowest common multiple of $v$ and $n_0$ is their produc
 \subsection{Choosing the chunk dimensions}
 The preceding text assumes that the chunk dimensions $p$ and $q$ were set beforehand.
 This is the case for existing HDF5 files, where the chunk layout must be specified during data set creation.
-However, for new files, we have an opportunity to choose the chunk dimensions to optimize data access.
+However, for new files, we have an opportunity to choose the chunk dimensions to \revised{improve} data access.
 
-The number of disk reads involved in accessing each row is equal to the number of chunks across a row of the matrix, i.e., $\myceil{n/q}$.
-Once these are loaded into the cache, no more reads are required to access the next $p-1$ rows, i.e., data are held in memory for all $p$ rows simultaneously.
+\revised{To access data from a particular row, we need to read all chunks overlapped by that row, i.e., $\myceil{n/q}$ chunks}.
+Once these are loaded into the cache, no more chunks \revised{need to be read from file} to access the next $p-1$ rows, i.e., data are held in memory for all $p$ rows simultaneously.
 For comparison, consider a layout containing row chunks, i.e., each chunk is an entire row.
-This provides the most efficient access to any single row as one read obtains all and only that row's data.
-To access $p$ rows from a row-chunked layout, $p$ reads would be required.
-Thus, for accessing consecutive rows with $p \times q$ chunks, it is possible to perform as well as or better than the row-chunked layout if 
+This provides the most efficient access to any single row as \revised{one chunk} obtains all and only that row's data.
+To access $p$ rows from a row-chunked layout, $p$ \revised{chunks would need to be read from file}.
+Thus, for accessing consecutive rows with $p \times q$ chunks, \revised{we can read the same number of chunks (or fewer) as the row-chunked layout} if 
 \begin{equation}
 \myceil{n/q} \le p \;.
 \end{equation}
@@ -298,8 +299,9 @@ If
 \begin{equation}
 \myceil{m/p} \le q \;,
 \end{equation}
-we can also outperform the column-chunked layout for accessing data in consecutive columns.
-Thus, by choosing $p$ and $q$ to satisfy Inequalities~3 and 4, we can use a single file layout to achieve data access performance similar to or better than that of pure column- or row-based chunking.
+we can \revised{access data in consecutive columns with the same number of chunk reads (or fewer) as} the column-chunked layout. 
+\revised{The number of chunks that need to be read is a major factor in HDF5 access speed.}
+By choosing $p$ and $q$ to satisfy Inequalities~3 and 4, we can obtain a file layout \revised{that provides fast access for both consecutive rows and columns, comparable to} pure row- or column-based chunking.
 
 Obviously, any arbitrarily large $p$ and $q$ will satisfy Inequalities~3 and 4.
 To avoid this, we use Inequalities~1 and 2 to determine the minimum chunk cache size.
@@ -346,13 +348,13 @@ Obviously, this is irrelevant when accessing data from existing HDF5 files where
 \subsection{Testing different layouts with simulated data}
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
 For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
-The contiguous layout is the fastest as only one disk read needs to be performed per column (Supplementary Figure~\ref{fig:hdf5layout}).
-Column-wise chunking also involves a single disk read per column, but is slower due to the overhead of decompression and chunk caching.
+The contiguous layout is the fastest as only one \revised{chunk} needs to be \revised{read from file} per column (Supplementary Figure~\ref{fig:hdf5layout}).
+Column-wise chunking also involves a single \revised{chunk} read per column, but is slower due to the overhead of decompression and chunk caching.
 Rectangular chunking is slightly slower than column-wise chunks, despite the optimized size of the cache -- this is attributable to the time spent collecting data across multiple cached chunks.
 As expected, row-wise chunks is the slowest as each column access effectively processes data from the entire matrix.
 
 The results are reversed for row access, where row-wise chunking is the layout that provides the best performance with \beachmat{} (Supplementary Figure~\ref{fig:hdf5layout}).
-This is expected as only one disk read is required per row, compared to multiple reads with column-wise chunking.
+This is expected as only one \revised{chunk} read is required per row, compared to multiple reads with column-wise chunking.
 We emphasize that rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
 This highlights the utility of rectangular chunks for both row and column accesses, compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
 The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
@@ -376,7 +378,7 @@ This is repeated with the next submatrix of the same size along the next $q_2$ c
 The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $q_2$ is not a multiple of $q_1$.
 We repeat this procedure with the next $p_1$ rows until the entire file has been processed.
 To convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
-The idea is to read and write entire chunks as much as possible, reducing the number of redundant disk accesses.
+The idea is to read and write entire chunks as much as possible, reducing the number of redundant \revised{reads from file}.
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
 Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).
@@ -386,7 +388,7 @@ Nonetheless, to maximize efficiency, all functions requiring column-based access
 this should be followed by a layout conversion step, and then by execution of functions requiring row-based access (e.g., gene-based processing).
 An alternative option would be to store scRNA-seq data in both row- and column-chunked form (i.e., as two separate HDF5 data sets) to allow for both access patterns.
 While this has some uses, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
-Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and disk accesses must be performed twice.
+Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and \revised{file} accesses must be performed twice.
 
 \section{Methods for real data processing}
 
