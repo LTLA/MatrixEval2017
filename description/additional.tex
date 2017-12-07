@@ -14,6 +14,9 @@
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
 
+\usepackage{color}
+\newcommand{\revised}[1]{\textcolor{red}{#1}}
+
 \begin{document}
 
 \begin{titlepage}
@@ -69,9 +72,9 @@ Double-precision CSC matrices of a specified dimension and density were generate
 Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
 
 To time row and column access with \beachmat{} and other APIs, we wrote C++ functions (one per API) that compute the sum of values in each row or column, respectively.
-Calculation of the row/column sums ensures that each entry of the row/column is visited in order to use its value.
-This means that each API \textit{must} access the matrix data, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
+\revised{This approach} ensures that each entry of the row/column is visited in order to use its value, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
 Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
+\revised{We stress that, in each run of the function, we are measuring the time required to access each data element of the entire matrix, not just from a single row, column or entry of the matrix.}
 
 Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
 This was repeated 10 times with new matrices, and the average time and standard error were computed for each access method. 
@@ -83,8 +86,8 @@ In all cases, standard errors were negligible and not plotted.
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
 We refer to this format as a ``simple matrix''.
-The simple matrix is easy to manipulate and the time required for data access is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
-However, its memory footprint is directly proportional to its length.
+The simple matrix is easy to manipulate and the time required to access \revised{all data elements in the matrix} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
+However, \revised{convenient data access comes at the cost of memory usage that} is directly proportional to \revised{the length of the one-dimensional array}.
 For example, a double-precision matrix containing data for 10000 genes in each of one million cells would require 80 GB of RAM.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
 Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.

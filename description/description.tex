@@ -190,7 +190,6 @@
 %% END MACROS SECTION
 
 % Other required things:
-\usepackage{color}
 \usepackage{subcaption}
 \captionsetup[subfigure]{justification=centering}
 
@@ -262,7 +261,8 @@ Another option is to use file-backed representations such as those in the \texti
 In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
 This simplifies software development and improves interoperability.
 
-Unfortunately, for native code written in statically typed languages like C++, the details of the matrix representation must be known during compilation.
+Unfortunately, \revised{using alternative matrix representations is less straightforward for} compiled code written in statically typed languages like C++.
+\revised{Existing interfaces for passing R matrices into C/C++ require the details of the matrix representation to be specified during compilation.}
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
 Writing multiple versions for different representations is difficult and unsustainable when more representations become available.
 The alternative is to perform all processing in R to exploit the availability of common methods.
@@ -285,7 +285,7 @@ By operating synergistically with existing Bioconductor infrastructure, \beachma
 
 \section*{Design and implementation}
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
-We define a base class that implements common methods for all representations.
+We define a base class that implements common methods for all representations \revised{of a given data type (e.g., integer, double-precision)}.
 Each specific representation is associated with a derived C++ class that provides customized implementations of the access methods.
 The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Figure~\ref{fig:beachoverview}).
 \beachmat{} then produces a corresponding C++ object, returning a pointer to the base class.
@@ -305,7 +305,7 @@ This pointer is the same regardless of the representation and can be used in dow
 \end{figure}
 
 Access to matrix data is achieved with common methods in the base class that have specialized implementations in each derived class. 
-When access to a specific row or column (or a slice thereof) is requested, the \beachmat{} API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
+When access to a specific row or column (or a \revised{part} thereof) is requested, the \beachmat{} API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
 This strategy provides the greatest flexibility for downstream applications, by allowing in-place modifications to vector elements and guaranteeing contiguous data storage. 
 In addition, a request for a specific entry of the matrix will directly return the corresponding data value.
 
