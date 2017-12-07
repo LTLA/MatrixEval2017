@@ -74,7 +74,7 @@ Conversion of each matrix object into other representations, if necessary, was p
 To time row and column access with \beachmat{} and other APIs, we wrote C++ functions (one per API) that compute the sum of values in each row or column, respectively.
 \revised{This approach} ensures that each entry of the row/column is visited in order to use its value, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
 Summation is also simple enough that the access time of the API will still constitute a major part of the overall time spent by the function.
-\revised{We stress that, in each run of the function, we are measuring the time required to access each data element of the entire matrix, not just from a single row, column or entry of the matrix.}
+\revised{We stress that, in each run of the function, we are measuring the time required to access each data element of the entire matrix, not just from a single row or column of the matrix.}
 
 Timings were performed in R using the \code{system.time} function on a call to each C++ function via \code{.Call}. 
 This was repeated 10 times with new matrices, and the average time and standard error were computed for each access method. 
@@ -208,7 +208,7 @@ This reduces memory usage in a more general manner than a sparse matrix, especia
 As with CSC matrices, \beachmat{} caches the row indices to speed up consecutive row access.
 
 Another option for \revised{constructing file-backed} matrices is to use the \textit{bigmemory} package \cite{kane2013scalable}.
-This constructs an in-memory \code{big.matrix} object that contains external pointers pointing to a \revised{file in which the data are stored.}
+This constructs an in-memory \code{big.matrix} object that contains external pointers to a \revised{file in which the data are stored.}
 In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of the HDF5 specification and portability of HDF5 files across systems.
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
 
@@ -221,7 +221,7 @@ When a particular row or column of the matrix is requested, the HDF5 library wil
 Each chunk is read from \revised{file} in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
 This is wasteful as more data needs to be processed than is required for the current request.
 To improve performance, \revised{the HDF5 library will cache a small number of} chunks in memory once they are read \revised{from file}.
-This means that they do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
+This means that \revised{the cached chunks} do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
 Chunks are then evicted from the cache once the \revised{cache size} limit is exceeded or if the hash indices \revised{of different chunks} overlap \revised{(see Section~\ref{sec:slotchoice})}.
 This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
 However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
