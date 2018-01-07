@@ -161,7 +161,7 @@ Writing, testing and maintaining two different versions of the same code doubles
 \subsection{Performance with HDF5-based matrices}
 For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvious option is to store the \revised{the data in a file} and load submatrices into memory as required.
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
-Each large matrix is stored as a dataset in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
+Each large matrix is stored as a data set in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
 Each \code{HDF5Matrix} instance provides methods to mimic a simple matrix object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the disk space requirements are manageable, even if multiple large matrices need to be generated to hold intermediate results throughout an analysis.
@@ -376,9 +376,9 @@ Consider an existing file with chunk dimensions of $(p_1, q_1)$.
 Assume that we want to obtain a new file with chunk dimensions of $(1, q_2)$, i.e., row-wise chunks containing $q_2$ values.
 We extract a submatrix of size $(p_1, q_2)$ from the existing file and write it to the new file with the row-chunked layout.
 This is repeated with the next submatrix of the same size along the next $q_2$ columns, and the process is iterated until all columns have been read and written for these $p_1$ rows.
-The size of the chunk cache is set to hold the single chunk that has not been completely read/written between iterations when $q_2$ is not a multiple of $q_1$.
+\revised{(In cases where $q_2$ is not a multiple of $q_1$, we configure the HDF5 chunk cache to hold the input} chunk that has not been completely read between iterations.)
 We repeat this procedure with the next $p_1$ rows until the entire file has been processed.
-To convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
+\revised{Conversely,} to convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
 The idea is to read and write entire chunks as much as possible, reducing the number of redundant \revised{reads from file}.
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
@@ -386,9 +386,9 @@ Converting from one layout to the other with the above strategy is fast, requiri
 The time scales linearly with matrix size, so for a large data set with a million cells, it would take 2-3 hours.
 This is minor compared to the time spent by the entire analysis.
 Nonetheless, to maximize efficiency, all functions requiring column-based access (e.g., cell quality control and normalization) should be grouped together and executed first; 
-this should be followed by a layout conversion step, and then by execution of functions requiring row-based access (e.g., gene-based processing).
-An alternative option would be to store scRNA-seq data in both row- and column-chunked form (i.e., as two separate HDF5 data sets) to allow for both access patterns.
-While this has some uses, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
+this should be followed by a layout conversion step, and then by execution of functions requiring row-based access, e.g., gene-based processing.
+An alternative option \revised{is} to store \revised{each matrix} in both row- and column-chunked form as two separate HDF5 data sets, which \revised{allows efficient access by both row and column simultaneously.}
+\revised{However}, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
 Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and \revised{file} accesses must be performed twice.
 
 \section{Methods for real data processing}
