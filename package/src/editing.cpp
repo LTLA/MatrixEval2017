@@ -13,7 +13,7 @@ SEXP edit_numeric_matrix(SEXP in) {
 }
 
 SEXP edit_numeric_arma_matrix(SEXP M) {
-    auto res=create_sparse_arma(M);
+    arma::sp_mat res=Rcpp::as<arma::sp_mat>(Rcpp::RObject(M));
     if (res.n_rows<2 || res.n_cols<2) {
         throw std::runtime_error("must be at least a 2x2 matrix");
     }

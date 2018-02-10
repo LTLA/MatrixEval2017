@@ -5,8 +5,6 @@
 #include <RcppEigen.h>
 #include "beachmat/numeric_matrix.h"
 
-arma::sp_mat create_sparse_arma(SEXP);
-
 extern "C" { 
 
 SEXP get_numeric_margins(SEXP, SEXP);
