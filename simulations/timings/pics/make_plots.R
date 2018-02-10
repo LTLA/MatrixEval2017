@@ -1,10 +1,14 @@
 # This makes pretty plots of all timing sets.
 
-plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, upper=NULL, ylab="Time (ms)", ...) {
+plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, lower=NULL, upper=NULL, ylab="Time (ms)", ...) {
     yranges <- range(data$Time)
+    if (!is.null(lower)) {
+        yranges[1] <- lower
+    }
     if (!is.null(upper)) {
         yranges[2] <- upper        
     }
+
     xranges <- range(data[,wrt])
     by.method <- split(data[,c(wrt, "Time")], data$Type, drop=TRUE)
     par(mar=c(5.1, 5.1, 4.1, 2.1))
@@ -88,7 +92,8 @@ incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (column)", "HDF5 (recta
 incoming$Ncells <- incoming$Ncells/1e3
 
 pdf("HDF5_col_ncol.pdf")
-plotter(incoming, "Ncells", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), main="Column access", cex.axis=1)
+plotter(incoming, "Ncells", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), 
+        main="Column access", cex.axis=1, lower=16, upper=16000)
 dev.off()
 
 incoming <- read.table("../timings_hdf5_row.txt", header=TRUE, sep="\t")
@@ -96,7 +101,8 @@ incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (row)", "HDF5 (rectangl
 incoming$Ngenes <- incoming$Ngenes/1e3
 
 pdf("HDF5_row_nrow.pdf")
-plotter(incoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of rows ("*10^3*")"), main="Row access", cex.axis=1)
+plotter(incoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of rows ("*10^3*")"), 
+        main="Row access", cex.axis=1, lower=16, upper=16000)
 dev.off()
 
 # Layout type.
