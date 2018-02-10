@@ -9,10 +9,16 @@ extern "C" {
 static const R_CallMethodDef all_call_entries[] = {
     REGISTER(get_numeric_margins, 2),
     REGISTER(get_numeric_default_margins, 2),
+
     REGISTER(get_numeric_simple_row_margins, 1),
     REGISTER(get_numeric_sparse_row_margins, 1),
+
     REGISTER(get_numeric_arma_margins, 2),
     REGISTER(get_numeric_eigen_margins, 2),
+
+    REGISTER(get_numeric_margins_random, 3),
+    REGISTER(get_numeric_sparse_row_margins_random, 2),
+
     REGISTER(edit_numeric_matrix, 1),
     REGISTER(edit_numeric_arma_matrix, 1),
     {NULL, NULL, 0}

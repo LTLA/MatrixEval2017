@@ -15,6 +15,10 @@ SEXP get_numeric_simple_row_margins(SEXP);
 
 SEXP get_numeric_sparse_row_margins(SEXP);
 
+SEXP get_numeric_margins_random(SEXP, SEXP, SEXP);
+
+SEXP get_numeric_sparse_row_margins_random(SEXP, SEXP);
+
 SEXP get_numeric_arma_margins(SEXP, SEXP);
 
 SEXP get_numeric_eigen_margins(SEXP, SEXP);

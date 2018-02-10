@@ -9,5 +9,8 @@ export(BeachmatRowSum, BeachmatColSum,
     NaiveSparseRowSum, DirectSimpleRowSum,
     ArmaRowSum, ArmaColSum,
     EigenRowSum, EigenColSum,
+
+    BeachmatRowSumRandom, BeachmatColSumRandom,
+    NaiveSparseRowSumRandom,
     se, timeExprs, writeToFile)
 
