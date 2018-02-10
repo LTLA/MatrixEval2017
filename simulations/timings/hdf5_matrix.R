@@ -157,6 +157,78 @@ for (ngenes in c(1000, 2000, 5000)) {
 }
 
 ###########################
+# Random column access, alternative layouts.
+
+ngenes <- 1000
+overwrite <- TRUE
+for (ncells in c(100, 200, 500)) { # a _lot_ shorter, as it takes too long using the full set of rows/columns.
+    fpaths <- file.path(tmp.dir, c("contig.h5", "colcomp.h5", "rowcomp.h5", "rect.h5"))
+    colchunk.time <- rowchunk.time <- contig.time <- rect.time <- numeric(10)
+
+    for (it in seq_len(10)) {         
+        dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
+        out.contig <- makeContiguous(dense.counts, fpaths[1], name="yay")
+        out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
+        out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6)
+        out.rect <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(40, 40), level=6)
+
+        o <- sample(ncells)
+        contig.time[it] <- timeExprs(BeachmatColSumRandom(out.contig, o))
+        colchunk.time[it] <- timeExprs(BeachmatColSumRandom(out.bycol, o))
+        rowchunk.time[it] <- timeExprs(BeachmatColSumRandom(out.byrow, o), times=1)
+        rect.time[it] <- timeExprs(BeachmatColSumRandom(out.rect, o), times=1)
+
+        unlink(fpaths)
+    }
+
+    writeToFile(Type="Contiguous", Ngenes=ngenes, Ncells=ncells,
+                timings=contig.time, file="timings_hdf5_col_layout_random.txt", overwrite=overwrite)
+    overwrite <- FALSE 
+    writeToFile(Type="Column chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=colchunk.time, file="timings_hdf5_col_layout_random.txt", overwrite=overwrite)
+    writeToFile(Type="Row chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=rowchunk.time, file="timings_hdf5_col_layout_random.txt", overwrite=overwrite)
+    writeToFile(Type="Rectangular chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=rect.time, file="timings_hdf5_col_layout_random.txt", overwrite=overwrite)
+}
+
+###########################
+# Random row access, alternative layouts.
+
+ncells <- 100
+overwrite <- TRUE
+for (ngenes in c(1000, 2000, 5000)) { 
+    fpaths <- file.path(tmp.dir, c("contig.h5", "colcomp.h5", "rowcomp.h5", "rect.h5"))
+    colchunk.time <- rowchunk.time <- contig.time <- rect.time <- numeric(10)
+
+    for (it in seq_len(10)) {
+        dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
+        out.contig <- makeContiguous(dense.counts, fpaths[1], name="yay")
+        out.bycol <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
+        out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6) 
+        out.rect <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(40, 40), level=6)
+ 
+        o <- order(ngenes)
+        contig.time[it] <- timeExprs(BeachmatRowSumRandom(out.contig, o), times=1)
+        colchunk.time[it] <- timeExprs(BeachmatRowSumRandom(out.bycol, o), times=1)
+        rowchunk.time[it] <- timeExprs(BeachmatRowSumRandom(out.byrow, o), times=1)
+        rect.time[it] <- timeExprs(BeachmatRowSumRandom(out.rect, o), times=1)
+
+        unlink(fpaths)
+    }
+
+    writeToFile(Type="Contiguous", Ngenes=ngenes, Ncells=ncells,
+                timings=contig.time, file="timings_hdf5_row_layout_random.txt", overwrite=overwrite)
+    overwrite <- FALSE 
+    writeToFile(Type="Column chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=colchunk.time, file="timings_hdf5_row_layout_random.txt", overwrite=overwrite)
+    writeToFile(Type="Row chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=rowchunk.time, file="timings_hdf5_row_layout_random.txt", overwrite=overwrite)
+    writeToFile(Type="Rectangular chunks", Ngenes=ngenes, Ncells=ncells,
+                timings=rect.time, file="timings_hdf5_row_layout_random.txt", overwrite=overwrite)
+}
+
+###########################
 # Testing the effects of sparsity on speed of column access.
 
 library(Matrix)
