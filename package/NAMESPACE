@@ -6,7 +6,9 @@ importFrom(utils, write.table)
 
 export(BeachmatRowSum, BeachmatColSum,
     DefaultRowSum, DefaultColSum,
-    NaiveSparseRowSum, DirectSimpleRowSum,
+    NaiveSparseRowSum, 
+    BeachmatColSumNoCopy, DirectSimpleRowSum,
+
     ArmaRowSum, ArmaColSum,
     EigenRowSum, EigenColSum,
 
