@@ -47,9 +47,9 @@ for (density in c(0.01, 0.05, 0.1, 0.2, 0.5, 1)) {
         out.bycol <- writeHDF5Array(sparse.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
         out.bycol0 <- writeHDF5Array(sparse.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=0)
 
-        contig.size[it] <- file.info(out.contig@seed@file)$size/1e3
-        colchunk.size[it] <- file.info(out.bycol@seed@file)$size/1e3
-        colchunk0.size[it] <- file.info(out.bycol0@seed@file)$size/1e3
+        contig.size[it] <- file.info(path(out.contig))$size/1e3
+        colchunk.size[it] <- file.info(path(out.bycol))$size/1e3
+        colchunk0.size[it] <- file.info(path(out.bycol0))$size/1e3
 
 	    unlink(fpaths)
     }
