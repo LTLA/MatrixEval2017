@@ -8,6 +8,10 @@ BeachmatColSum <- function(M) {
     .Call(cxx_get_numeric_margins, M, 1L)
 }
 
+BeachmatColSumNoCopy <- function(M) {
+    .Call(cxx_get_numeric_col_margins_const, M)
+}
+
 DefaultRowSum <- function(M) {
     .Call(cxx_get_numeric_default_margins, M, 2L)
 }

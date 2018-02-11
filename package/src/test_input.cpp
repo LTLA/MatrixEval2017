@@ -6,7 +6,7 @@
 SEXP get_numeric_margins (SEXP in, SEXP mode) {
     BEGIN_RCPP
     auto ptr=beachmat::create_numeric_matrix(in);
-    return get_margins<Rcpp::NumericVector>(ptr.get(), mode);
+    return get_margins(ptr.get(), mode);
     END_RCPP
 }
 
@@ -14,27 +14,6 @@ SEXP get_numeric_default_margins (SEXP in, SEXP mode) {
     BEGIN_RCPP
     Rcpp::NumericMatrix mat(in);
     return get_default_margins(mat, mode);
-    END_RCPP
-}
-
-/* Compute simple row margins without copying. */
-
-SEXP get_numeric_simple_row_margins (SEXP in) {
-    BEGIN_RCPP
-    Rcpp::NumericMatrix mat(in);
-    const int nrows=mat.nrow();
-    const int ncols=mat.ncol();
-
-    Rcpp::NumericVector output(mat.nrow());
-    for (int r=0; r<nrows; ++r) {
-        auto mIt=mat.begin();
-        double& curout=output[r];
-        for (int c=0; c<ncols; ++c, mIt += nrows) {
-            curout += *mIt;
-        }
-    }
-    
-    return output;
     END_RCPP
 }
 

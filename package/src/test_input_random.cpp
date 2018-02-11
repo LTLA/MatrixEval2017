@@ -6,7 +6,7 @@
 SEXP get_numeric_margins_random (SEXP in, SEXP mode, SEXP order) {
     BEGIN_RCPP
     auto ptr=beachmat::create_numeric_matrix(in);
-    return get_margins_random<Rcpp::NumericVector>(ptr.get(), mode, order);
+    return get_margins_random(ptr.get(), mode, order);
     END_RCPP
 }
 
