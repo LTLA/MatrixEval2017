@@ -11,11 +11,12 @@ overwrite <- TRUE
 for (ncells in c(1000, 2000, 5000, 10000)) {
     for (density in c(0.01, 0.05, 0.1, 0.2)) { 
         
-        col.time <- arma.time <- eigen.time <- def.time <- numeric(10)
+        col.time <- colnocopy.time <- arma.time <- eigen.time <- def.time <- numeric(10)
         for (it in seq_len(10)) { 
             sparse.counts <- rsparsematrix(ngenes, ncells, density)
             dense.counts <- as.matrix(sparse.counts)
             col.time[it] <- timeExprs(BeachmatColSum(sparse.counts))
+            colnocopy.time[it] <- timeExprs(BeachmatColSumNoCopy(sparse.counts))
             arma.time[it] <- timeExprs(ArmaColSum(sparse.counts))
             eigen.time[it] <- timeExprs(ArmaColSum(sparse.counts))
             def.time[it] <- timeExprs(BeachmatColSum(dense.counts))
@@ -24,6 +25,8 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
         writeToFile(Type="sparse", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=col.time, file="timings_sparse_col.txt", overwrite=overwrite)
         overwrite <- FALSE 
+        writeToFile(Type="sparse (no copy)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+                    timings=colnocopy.time, file="timings_sparse_col.txt", overwrite=overwrite)
         writeToFile(Type="RcppArmadillo", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=arma.time, file="timings_sparse_col.txt", overwrite=overwrite)
         writeToFile(Type="RcppEigen", Ngenes=ngenes, Ncells=ncells, Density=density, 
