@@ -14,5 +14,9 @@ export(BeachmatRowSum, BeachmatColSum,
 
     BeachmatRowSumRandom, BeachmatColSumRandom,
     NaiveSparseRowSumRandom,
+
+    standardMatrixMultiply, indexedMatrixMultiply,
+    cellularDetectionRate, numCellsExpressing,
+
     se, timeExprs, writeToFile)
 

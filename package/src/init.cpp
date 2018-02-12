@@ -25,6 +25,9 @@ static const R_CallMethodDef all_call_entries[] = {
 
     REGISTER(standard_matrix_multiplication, 2),
     REGISTER(indexed_matrix_multiplication, 2),
+
+    REGISTER(get_ncells_expressing, 1),
+    REGISTER(get_ngenes_expressed, 1),
     {NULL, NULL, 0}
 };
 

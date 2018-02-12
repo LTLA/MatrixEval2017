@@ -33,6 +33,10 @@ SEXP standard_matrix_multiplication(SEXP, SEXP);
 
 SEXP indexed_matrix_multiplication(SEXP, SEXP);
 
+SEXP get_ncells_expressing(SEXP);
+
+SEXP get_ngenes_expressed(SEXP);
+
 }
 
 #endif
