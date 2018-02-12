@@ -15,20 +15,20 @@ for (n in c(500, 1000, 2000)) {
         a <- matrix(runif(1e6), n, n)
         b <- matrix(runif(1e6), n, n)
         
-        beach.dense.time[it] <- timeExprs(.Call(beachtime:::cxx_standard_matrix_multiplication, a, b))
+        beach.dense.time[it] <- timeExprs(standardMatrixMultiply(a, b))
         default.dense.time[it] <- timeExprs(a %*% b) 
 
-        a3 <- rsparsematrix(1000, 1000, 0.01)
-        b3 <- rsparsematrix(1000, 1000, 0.01)
-        beach.sparse.time[it] <- timeExprs(.Call(beachtime:::cxx_standard_matrix_multiplication, a3, b3))
-        beach.sparse.time2[it] <- timeExprs(.Call(beachtime:::cxx_indexed_matrix_multiplication, a3, b3))
+        a3 <- rsparsematrix(n, n, 0.01)
+        b3 <- rsparsematrix(n, n, 0.01)
+        beach.sparse.time[it] <- timeExprs(standardMatrixMultiply(a3, b3))
+        beach.sparse.time2[it] <- timeExprs(indexedMatrixMultiply(a3, b3))
         default.sparse.time[it] <- timeExprs(a3 %*% b3) 
     
         fpaths <- c("a.h5", "b.h5")
         a2 <- writeHDF5Array(a, fpaths[1], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
         b2 <- writeHDF5Array(b, fpaths[2], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
-        beach.hdf5.time[it] <- timeExprs(.Call(beachtime:::cxx_standard_matrix_multiplication, a2, b), times=1) # Switching order is slower, as inner loop reads from file. 
-        beach.hdf5.time2[it] <- timeExprs(.Call(beachtime:::cxx_standard_matrix_multiplication, a2, b2), times=1) 
+        beach.hdf5.time[it] <- timeExprs(standardMatrixMultiply(a2, b), times=1) # Switching order is slower, as inner loop reads from file. 
+        beach.hdf5.time2[it] <- timeExprs(standardMatrixMultiply(a2, b2), times=1) 
         default.hdf5.time[it] <- timeExprs(a2 %*% b, times=1) # Multiplication of 2 DelayedArray objects is not supported.
         unlink(fpaths)
     }
