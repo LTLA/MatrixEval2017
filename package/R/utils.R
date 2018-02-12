@@ -4,6 +4,7 @@ timeExprs <- function(..., times=10) {
     output <- numeric(times)
     expr <- substitute(system.time(...))
     for (it in seq_len(times)) {
+        gc() # Trigger garbage collection to avoid it being in the timing.
         output[it] <- eval(expr)["elapsed"]
     }
     return(mean(output)*1e3) # Get to milliseconds
