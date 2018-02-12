@@ -18,70 +18,120 @@ plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, lower
     line.heights <- 2^seq(floor(line.ranges[1]), ceiling(line.ranges[2]), by=1)
     abline(h=line.heights, lwd=0.5, lty=3, col="grey50")
 
-    if (missing(col)) { col <- rep("black", length(by.method)) }
-    if (missing(lty)) { lty <- rep(1, length(by.method)) }
-    if (missing(pch)) { pch <- rep(16, length(by.method)) }
+    if (missing(col)) { 
+        col <- rep("black", length(by.method)) 
+        names(col) <- names(by.method)
+    }
+    if (missing(lty)) { 
+        lty <- rep(1, length(by.method)) 
+        names(lty) <- names(by.method)
+    }
+    if (missing(pch)) { 
+        pch <- rep(16, length(by.method)) 
+        names(pch) <- names(by.method)
+    }
 
-    for (i in seq_along(by.method)) {
-        current <- by.method[[i]]
-        points(current[,wrt], current$Time, col=col[i], pch=pch[i], cex=1.4)
-        lines(current[,wrt], current$Time, col=col[i], lwd=2, lty=lty[i])
+    for (meth in names(by.method)) {
+        current <- by.method[[meth]]
+        points(current[,wrt], current$Time, col=col[meth], pch=pch[meth], cex=1.4)
+        lines(current[,wrt], current$Time, col=col[meth], lwd=2, lty=lty[meth])
     }   
     if (!is.na(loc)) {
-        legend(loc, col=col, lty=lty, legend=names(by.method), pch=pch, lwd=2, cex=1.2, bg="white")
+        legend(loc, col=col, lty=lty[names(col)], pch=pch[names(col)],
+               legend=names(col), lwd=2, cex=1.2, bg="white")
     }
     return(invisible(NULL))
 }
 
 ##############################
+# Defining colours.
+
+.beachmat_primary <- "red"
+.beachmat_secondary <- "orange"
+.beachmat_tertiary <- "gold2"
+
+.Rcpp <- "black"
+.Rcpp_arma <- "grey70"
+.Rcpp_eigen <- "grey50"
+
+##############################
 # Base plots.
 
-incoming <- read.table("../timings_base_col.txt", header=TRUE)
+base_cols <- c(beachmat=.beachmat_primary, 
+               `beachmat (no copy)`=.beachmat_secondary,
+               Rcpp=.Rcpp)
+base_pch <- c(beachmat=16,
+              `beachmat (no copy)`=17,
+              Rcpp=18)
+
+incoming <- read.table("../timings_base_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
 pdf("base_col.pdf")
-plotter(incoming, "Ncells", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of columns ("*10^3*")"), main="Column access")
+plotter(incoming, "Ncells", col=base_cols, pch=base_pch, xlab=expression("Number of columns ("*10^3*")"), main="Column access")
 dev.off()
 
 incoming <- read.table("../timings_base_row.txt", header=TRUE)
 incoming$Ngenes <- incoming$Ngenes/1e3
 pdf("base_row.pdf")
-plotter(incoming, "Ngenes", c("black", "grey70"), pch=c(16, 17), xlab=expression("Number of rows ("*10^3*")"), main="Row access", loc=NA)
+plotter(incoming, "Ngenes", col=base_cols, pch=base_pch, xlab=expression("Number of rows ("*10^3*")"), main="Row access", loc=NA)
 dev.off()
 
 ##############################
 # Sparse plots.
 
-incoming <- read.table("../timings_sparse_col.txt", header=TRUE)
+sparse_cols <- c(beachmat=.beachmat_primary,
+                 `beachmat (no copy)`=.beachmat_secondary,
+                 `beachmat (dense)`=.beachmat_tertiary,
+                 RcppArmadillo=.Rcpp_arma,
+                 RcppEigen=.Rcpp_eigen)
+
+sparse_pch <- c(beachmat=16,
+                `beachmat (no copy)`=17,
+                `beachmat (dense)`=18,
+                RcppArmadillo=15,
+                RcppEigen=4)
+
+incoming <- read.table("../timings_sparse_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
 incoming$Density <- incoming$Density * 100
-incoming$Type <- factor(incoming$Type, c("simple", "sparse", "RcppArmadillo"))
 
 pdf("sparse_col_density.pdf")
 subincoming <- incoming[incoming$Ncells==1,]
-plotter(subincoming, "Density", c("black", "red", "grey70"), pch=c(16, 17, 18), xlab="Density (%)", loc="bottomright")
+plotter(subincoming, "Density", col=sparse_cols, pch=sparse_pch, xlab="Density (%)", loc="bottomright")
 dev.off()
 
 pdf("sparse_col_ncol.pdf")
 subincoming <- incoming[incoming$Density==1,]
-plotter(subincoming, "Ncells", c("black", "red", "grey70"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), loc=NA)
+plotter(subincoming, "Ncells", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of columns ("*10^3*")"), loc=NA)
 dev.off()
 
 # By row.
 
+sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
+                 `beachmat (dense)`=.beachmat_secondary,
+                 `Rcpp (naive)`=.Rcpp,
+                 RcppArmadillo=.Rcpp_arma,
+                 RcppEigen=.Rcpp_eigen)
+
+sparse_pch <- c(`beachmat (cached)`=16,
+                `beachmat (dense)`=17,
+                `Rcpp (naive)`=18,
+                RcppArmadillo=15,
+                RcppEigen=4)
+
+
 incoming <- read.table("../timings_sparse_row.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
 incoming$Ngenes <- incoming$Ngenes/1e3
 incoming$Density <- incoming$Density * 100
-incoming <- incoming[!incoming$Type %in% c("RcppArmadillo", "RcppEigen"),]
-incoming$Type <- factor(incoming$Type, c("simple", "sparse (cached)", "sparse (naive)"))
 
 pdf("sparse_row_density.pdf")
 subincoming <- incoming[incoming$Ngenes==10,]
-plotter(subincoming, "Density", c("black", "red", "blue"), pch=c(16, 17, 15), xlab="Density (%)", upper=max(subincoming$Time)*1.1)
+plotter(subincoming, "Density", col=sparse_cols, pch=sparse_pch, xlab="Density (%)", upper=max(subincoming$Time)*1.1)
 dev.off()
 
 pdf("sparse_row_nrow.pdf")
 subincoming <- incoming[incoming$Density==1,]
-plotter(subincoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 15), xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+plotter(subincoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), loc=NA)
 dev.off()
 
 ##############################
