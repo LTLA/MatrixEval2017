@@ -22,16 +22,16 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
             def.time[it] <- timeExprs(BeachmatColSum(dense.counts))
         }
     
-        writeToFile(Type="sparse", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="beachmat", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=col.time, file="timings_sparse_col.txt", overwrite=overwrite)
         overwrite <- FALSE 
-        writeToFile(Type="sparse (no copy)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="beachmat (no copy)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=colnocopy.time, file="timings_sparse_col.txt", overwrite=overwrite)
         writeToFile(Type="RcppArmadillo", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=arma.time, file="timings_sparse_col.txt", overwrite=overwrite)
         writeToFile(Type="RcppEigen", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=eigen.time, file="timings_sparse_col.txt", overwrite=overwrite)
-        writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="beachmat (dense)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_col.txt", overwrite=overwrite)
     }
 }
@@ -61,12 +61,12 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
             }
         }
 
-        writeToFile(Type="sparse (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="beachmat (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=row.time, file="timings_sparse_row.txt", overwrite=overwrite)
         overwrite <- FALSE 
-        writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="beachmat (dense)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=def.time, file="timings_sparse_row.txt", overwrite=overwrite)
-        writeToFile(Type="sparse (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+        writeToFile(Type="Rcpp (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                     timings=naive.time, file="timings_sparse_row.txt", overwrite=overwrite)
 
         if (!skip.arma) { 
@@ -97,12 +97,12 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
         naive.time[it] <- timeExprs(NaiveSparseRowSumRandom(sparse.counts, o), times=1)
     }
 
-    writeToFile(Type="sparse (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="beachmat (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=row.time, file="timings_sparse_row_ordered.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="beachmat (dense)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=def.time, file="timings_sparse_row_ordered.txt", overwrite=overwrite)
-    writeToFile(Type="sparse (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="Rcpp (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=naive.time, file="timings_sparse_row_ordered.txt", overwrite=overwrite)
 }
 
@@ -124,12 +124,12 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
         naive.time[it] <- timeExprs(NaiveSparseRowSumRandom(sparse.counts, o), times=1)
     }
 
-    writeToFile(Type="sparse (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="beachmat (cached)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=row.time, file="timings_sparse_row_random.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="beachmat (dense)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=def.time, file="timings_sparse_row_random.txt", overwrite=overwrite)
-    writeToFile(Type="sparse (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
+    writeToFile(Type="Rcpp (naive)", Ngenes=ngenes, Ncells=ncells, Density=density, 
                 timings=naive.time, file="timings_sparse_row_random.txt", overwrite=overwrite)
 }
 
