@@ -23,8 +23,8 @@ static const R_CallMethodDef all_call_entries[] = {
     REGISTER(edit_numeric_matrix, 1),
     REGISTER(edit_numeric_arma_matrix, 1),
 
-    REGISTER(dense_matrix_multiplication, 2),
-    REGISTER(sparse_matrix_multiplication, 2),
+    REGISTER(standard_matrix_multiplication, 2),
+    REGISTER(indexed_matrix_multiplication, 2),
     {NULL, NULL, 0}
 };
 

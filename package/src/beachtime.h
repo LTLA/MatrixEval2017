@@ -29,9 +29,9 @@ SEXP edit_numeric_matrix(SEXP);
 
 SEXP edit_numeric_arma_matrix(SEXP);
 
-SEXP dense_matrix_multiplication(SEXP, SEXP);
+SEXP standard_matrix_multiplication(SEXP, SEXP);
 
-SEXP sparse_matrix_multiplication(SEXP, SEXP);
+SEXP indexed_matrix_multiplication(SEXP, SEXP);
 
 }
 

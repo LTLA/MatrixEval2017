@@ -1,6 +1,6 @@
 #include "beachtime.h"
 
-SEXP dense_matrix_multiplication(SEXP left, SEXP right) {
+SEXP standard_matrix_multiplication(SEXP left, SEXP right) {
     BEGIN_RCPP
     auto lptr=beachmat::create_numeric_matrix(left);
     auto rptr=beachmat::create_numeric_matrix(right);
@@ -38,7 +38,7 @@ SEXP dense_matrix_multiplication(SEXP left, SEXP right) {
     END_RCPP
 }
 
-SEXP sparse_matrix_multiplication(SEXP left, SEXP right) {
+SEXP indexed_matrix_multiplication(SEXP left, SEXP right) {
     BEGIN_RCPP
     auto lptr=beachmat::create_numeric_matrix(left);
     auto rptr=beachmat::create_numeric_matrix(right);
