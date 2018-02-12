@@ -49,11 +49,11 @@ for (mode in c("library_sizes", "detect_cells", "detect_genes")) {
     
     overwrite <- TRUE
     fout <- paste0("timings_", mode, ".txt")
-    writeToFile(Type="dense (beachmat)", N=n, timings=beach.dense.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="dense (beachmat)", timings=beach.dense.time, file=fout, overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="dense (R)", N=n, timings=default.dense.time, file=fout, overwrite=overwrite)
-    writeToFile(Type="HDF5 (beachmat)", N=n, timings=beach.hdf5.time, file=fout, overwrite=overwrite)
-    writeToFile(Type="HDF5 (R)", N=n, timings=default.hdf5.time, file=fout, overwrite=overwrite)
-    writeToFile(Type="sparse (beachmat)", N=n, timings=beach.sparse.time, file=fout, overwrite=overwrite)
-    writeToFile(Type="sparse (R)", N=n, timings=default.sparse.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="dense (R)", timings=default.dense.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="HDF5 (beachmat)", timings=beach.hdf5.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="HDF5 (R)", timings=default.hdf5.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="sparse (beachmat)", timings=beach.sparse.time, file=fout, overwrite=overwrite)
+    writeToFile(Type="sparse (R)", timings=default.sparse.time, file=fout, overwrite=overwrite)
 }
