@@ -1,4 +1,4 @@
-# Timing on Zeisel's dataset.
+# Timing on Zeisel's brain cell dataset.
 
 infile <- "expression_mRNA_17-Aug-2014.txt"
 counts <- read.delim(infile, stringsAsFactors=FALSE, header=FALSE, row.names=1, skip=11)[,-1] # First column after row names is some useless filler.
@@ -18,7 +18,7 @@ hdf5.by.col <- writeHDF5Array(dense.counts, fpath[1], name="yay", chunk_dim=c(nr
 hdf5.by.row <- writeHDF5Array(dense.counts, fpath[2], name="yay", chunk_dim=c(1, ncol(dense.counts)), level=6)
 hdf5.rect <- writeHDF5Array(dense.counts, fpath[3], name="yay", chunk_dim=c(200, 200), level=6)
 
-write.table(data.frame(Sizes=c(simple=object.size(dense.counts)/1e3,
+write.table(data.frame(Sizes=c(dense=object.size(dense.counts)/1e3,
                                sparse=object.size(sparse.counts)/1e3,
                                HDF5.col=object.size(hdf5.by.col)/1e3,
                                HDF5.row=object.size(hdf5.by.row)/1e3,
@@ -39,7 +39,7 @@ for (it in 1:10) {
     rect.time[it] <- timeExprs(BeachmatColSum(hdf5.rect), times=1)
 }
 
-writeToFile(Type="simple", timings=dense.time, file="timings_col.txt", overwrite=TRUE)
+writeToFile(Type="dense", timings=dense.time, file="timings_col.txt", overwrite=TRUE)
 writeToFile(Type="sparse", timings=sparse.time, file="timings_col.txt", overwrite=FALSE)
 writeToFile(Type="HDF5 (column)", timings=hdf5.time, file="timings_col.txt", overwrite=FALSE)
 writeToFile(Type="HDF5 (rectangle)", timings=rect.time, file="timings_col.txt", overwrite=FALSE)
@@ -54,7 +54,7 @@ for (it in 1:10) {
     rect.time[it] <- timeExprs(BeachmatRowSum(hdf5.rect), times=1) 
 }
 
-writeToFile(Type="simple", timings=dense.time, file="timings_row.txt", overwrite=TRUE)
+writeToFile(Type="dense", timings=dense.time, file="timings_row.txt", overwrite=TRUE)
 writeToFile(Type="sparse", timings=sparse.time, file="timings_row.txt", overwrite=FALSE)
 writeToFile(Type="HDF5 (row)", timings=hdf5.time, file="timings_row.txt", overwrite=FALSE)
 writeToFile(Type="HDF5 (rectangle)", timings=rect.time, file="timings_row.txt", overwrite=FALSE)
