@@ -256,8 +256,14 @@ dev.off()
 incoming <- read.table("../chunking/timings_rechunk_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
 
+cols <- c(`Column to row`="darkgreen",
+          `Row to column`="limegreen")
+
+pchs <- c(`Column to row`=16,
+          `Row to column`=17)
+
 pdf("HDF5_col_rechunk.pdf")
-plotter(incoming, "Ncells", c("orange", "darkgreen"), pch=c(16, 17), lty=c(2,2), 
+plotter(incoming, "Ncells", col=cols, pch=pchs,
         xlab=expression("Number of columns ("*10^3*")"), cex.axis=1)
 dev.off()
 
@@ -265,7 +271,49 @@ incoming <- read.table("../chunking/timings_rechunk_row.txt", header=TRUE, sep="
 incoming$Ngenes <- incoming$Ngenes/1e3
 
 pdf("HDF5_row_rechunk.pdf")
-plotter(incoming, "Ngenes", c("orange", "darkgreen"), pch=c(16, 17), lty=c(2,2), 
+plotter(incoming, "Ngenes", col=cols, pch=pchs,
         xlab=expression("Number of rows ("*10^3*")"), cex.axis=1, loc=NA)
 dev.off()
 
+##############################
+# Matrix multiplication. Again, this involves a different suite of colors. 
+
+mult_cols <- c(`dense (beachmat)`="darkblue",
+               `dense (R)`="darkblue",
+               `sparse (beachmat)`="blue",
+               `sparse (beachmat II)`="blue",
+               `sparse (R)`="blue",
+               `HDF5/dense (beachmat)`="dodgerblue",
+               `HDF5/dense (R)`="dodgerblue",
+               `HDF5/HDF5 (beachmat)`="dodgerblue")
+
+mult_pch <- c(`dense (beachmat)`=16,
+              `dense (R)`=17,
+              `sparse (beachmat)`=18,
+              `sparse (beachmat II)`=15,
+              `sparse (R)`=4,
+              `HDF5/dense (beachmat)`=1,
+              `HDF5/HDF5 (beachmat)`=2,
+              `HDF5/dense (R)`=3)
+
+mult_lty <- c(`dense (beachmat)`=1,
+              `dense (R)`=2,
+              `HDF5/dense (beachmat)`=1,
+              `HDF5/HDF5 (beachmat)`=1,
+              `HDF5/dense (R)`=2,
+              `sparse (beachmat)`=1,
+              `sparse (beachmat II)`=1,
+              `sparse (R)`=2)
+
+incoming <- read.table("../timings_mat_mult.txt", header=TRUE, sep="\t")
+
+pdf("mat_mult.pdf", width=11, height=8)
+layout(cbind(1, 2), width=c(5, 2))
+par(mar=c(5.1, 4.1, 2.1, 0.1))
+plotter(incoming, "N", mult_cols, pch=mult_pch, lty=mult_lty,
+        xlab=expression("Order ("*10^3*")"), cex.axis=1, loc=NA)
+par(mar=c(5.1, 0.1, 2.1, 0.1))
+plot.new()
+legend("left", col=mult_cols, lty=mult_lty[names(mult_cols)], pch=mult_pch[names(mult_cols)],
+       legend=names(mult_cols), lwd=2, cex=1.2, bg="white")
+dev.off()
