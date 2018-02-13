@@ -455,11 +455,12 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/base_row.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Time required for column or row access of simple matrices using the \beachmat{} or \textit{Rcpp} APIs.
+    \caption{\revised{Time required to access consecutive} columns or rows of \revised{simulated dense} matrices using the \beachmat{} or \textit{Rcpp} APIs.
         (a) Column access time with respect to the number of columns, for a matrix with 10000 rows.
+        \revised{For \beachmat{}, timings were also recorded for an access mode that does not copy the data.}
         (b) Row access time with respect to the number of rows, for a matrix with 1000 columns.
 %        Access was timed after computing the column/row sums to ensure iteration with each API.
-%        Each time represents the average of 10 simulations.
+        \revised{Each timing represents the average of 10 simulations, and involves accessing the entirety of the matrix.}
 %        Standard errors were negligible and are not shown.
         Intervals between the horizontal dotted lines represent 2-fold increases in time.
     }
@@ -490,30 +491,14 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_col_ncol.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Column access times for CSC matrices using \beachmat{} (sparse) or \textit{RcppArmadillo}, compared to an equivalent simple matrix with \beachmat{}.
+    \caption{\revised{Time required to access consecutive columns of simulated} CSC matrices using \beachmat{} \revised{or the \textit{RcppArmadillo} and \textit{RcppEigen} APIs}, compared to an equivalent \revised{dense} matrix with \beachmat{}.
+        \revised{Timings were also recorded for a copy-free column access method in \beachmat{}.}
         (a) Access times with respect to the density of non-zero entries as a percentage of all entries, for a matrix with 10000 rows and 1000 columns.
         (b) Access times with respect to the number of columns, for a matrix with 10000 rows and 1\% density.
+        \revised{Each timing represents the average of 10 simulations, and involves accessing all columns in the matrix.}
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:sparsecol}
-\end{figure}
-
-\begin{figure}[btp]
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_density.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_nrow.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Consecutive row access times for CSC matrices using a naive binary search or the caching method in \beachmat{}.
-        For reference, access time for an equivalent simple matrix in \beachmat{} is also shown.
-        (a) Access times with respect to the density of non-zero entries, for a matrix with 10000 rows and 1000 columns.
-        (b) Access times with respect to the number of rows, for a matrix with 1000 columns and 1\% non-zero entries.
-        Horizontal dotted lines represent 2-fold increases in time.
-    }
-    \label{fig:sparserow}
 \end{figure}
 
 \begin{figure}[bt]
@@ -525,10 +510,10 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Access times for a HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks.
-        Times for a simple matrix are shown for comparison.
+    \caption{\revised{Time required for \beachmat{} to access consecutive rows or columns} of a \revised{simulated} HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks, compared to \revised{an equivalent dense} matrix.
         (a) Column access time with respect to the number of columns, for a dense matrix with 10000 rows.
         (b) Row access time with respect to the number of rows, for a dense matrix with 1000 columns.
+        \revised{Each timing represents the average of 10 simulations, and involves accessing the entirety of the matrix.}
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5time}
@@ -536,17 +521,18 @@ and 30 hours for the randomized PCA.
 
 \begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_layout.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_layout_random.pdf}
         \caption{}
     \end{subfigure}
     \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_layout.pdf}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_layout_random.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Column/row access times of \beachmat{} for \code{HDF5Matrix} objects constructed with different HDF5 file layouts, 
+    \caption{\revised{Timings for using \beachmat{} to access random} rows or columns \revised{of a simulated HDF5-backed matrix} constructed with different HDF5 file layouts, 
         i.e., contiguous, row- or column-chunking, or $40\times40$ rectangular chunks.
-        (a) Column access times with respect to the number of columns, for a dense matrix with 1000 rows.
-        (b) Row access times with respect to the number of rows, for a dense matrix with 100 columns.
+        (a) \revised{Random} column access times with respect to the number of columns, for a dense matrix with 1000 rows.
+        (b) \revised{Random} row access times with respect to the number of rows, for a dense matrix with 100 columns.
+        \revised{Each row or column in the matrix was accessed exactly once in random order.}
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5layout}
@@ -562,7 +548,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_rechunk.pdf}
         \caption{}
     \end{subfigure}
-    \caption{Time required to convert from a column-based chunk layout to a row-based chunk layout, or vice versa.
+    \caption{Time required to convert from a column-based chunk layout to a row-based chunk layout, or vice versa, \revised{in HDF5-backed matrices}.
         Each chunk contained 5000 values along a single row or column (or set to the corresponding dimension of the matrix, if it was smaller than 5000).
         Conversion times were recorded with respect to increasing number of (a) columns for a dense matrix with 10000 rows, or (b) rows for a dense matrix with 1000 columns.
         All values represent the mean of 10 simulation iterations.
