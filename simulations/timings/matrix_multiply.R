@@ -25,7 +25,7 @@ for (n in c(500, 1000, 2000)) {
         default.sparse.time[it] <- timeExprs(a3 %*% b3) 
     
         fpaths <- c("mm_tmp1.h5", "mm_tmp2.h5")
-        if (file.exists(fpaths)) { unlink(fpaths) }
+        if (any(file.exists(fpaths))) { unlink(fpaths) }
         a2 <- writeHDF5Array(a, fpaths[1], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
         b2 <- writeHDF5Array(b, fpaths[2], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
         beach.hdf5.time[it] <- timeExprs(standardMatrixMultiply(a2, b), times=1) # Switching order is slower, as inner loop reads from file. 
