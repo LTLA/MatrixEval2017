@@ -502,6 +502,25 @@ and 30 hours for the randomized PCA.
 \end{figure}
 
 \begin{figure}[bt]
+    \centering
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_ordered.pdf}
+        \caption{}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.49\textwidth}
+        \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_random.pdf}
+        \caption{}
+    \end{subfigure}
+    \caption{\revised{Time required to access non-consecutive rows of simulated CSC matrices using the caching method in \beachmat{} or a naive binary search implemented in \textit{Rcpp}, compared to an equivalent \revised{dense} matrix with \beachmat{}.
+        (a) Access times for ordered but non-consecutive rows, with respect to the number of rows in a matrix with 10000 rows and 1000 columns at 1\% density.
+        This involved accessing every 5\textsuperscript{th} row and returning to the first unaccessed row, i.e., $\{1, 6, \ldots, 9996, 2, 7, \ldots\}$.
+        (b) Access times for random rows.
+        Each timing represents the average of 10 simulations, and involves accessing all rows in the matrix.
+Horizontal dotted lines represent 2-fold increases in time.}}
+    \label{fig:sparsecolrandom}
+\end{figure}
+
+\begin{figure}[bt]
     \begin{subfigure}[b]{0.49\textwidth}
         \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_col_ncol.pdf}
         \caption{}
@@ -528,7 +547,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_layout_random.pdf}
         \caption{}
     \end{subfigure}
-    \caption{\revised{Timings for using \beachmat{} to access random} rows or columns \revised{of a simulated HDF5-backed matrix} constructed with different HDF5 file layouts, 
+    \caption{\revised{Time required to use \beachmat{} to access random} rows or columns \revised{of a simulated HDF5-backed matrix} constructed with different HDF5 file layouts, 
         i.e., contiguous, row- or column-chunking, or $40\times40$ rectangular chunks.
         (a) \revised{Random} column access times with respect to the number of columns, for a dense matrix with 1000 rows.
         (b) \revised{Random} row access times with respect to the number of rows, for a dense matrix with 100 columns.
@@ -537,7 +556,6 @@ and 30 hours for the randomized PCA.
     }
     \label{fig:hdf5layout}
 \end{figure}
-
 
 \begin{figure}[bt]
     \begin{subfigure}[bt]{0.49\textwidth}
@@ -555,6 +573,22 @@ and 30 hours for the randomized PCA.
         Horizontal dotted lines represent 2-fold increases in time.
     }
     \label{fig:hdf5rechunk}
+\end{figure}
+
+\begin{figure}[bt]
+    \begin{center}
+        \includegraphics[width=0.8\textwidth]{../simulations/timings/pics/mat_mult.pdf}
+    \end{center}
+    \caption{\revised{Time required to perform matrix multiplication between square dense matrices, between sparse matrices or between a HDF5-backed matrix and a dense matrix,
+as a function of the order of the matrix.     
+Matrix multiplication was performed using a simple algorithm implemented in C++ with \beachmat{}.
+For comparison, timings were also obtained for the \code{\%*\%} operator in R (base R for dense matrices; 
+    from the \textit{Matrix} package, for sparse matrices;
+    or from the \textit{DelayedArray} package, for HDF5-backed matrices).
+For sparse matrix multiplication, timings are also provided for an alternative algorithm implemented in \beachmat{} that better exploits sparsity (II). 
+The time required to multiply two HDF5-backed matrices together is also shown for \beachmat{} only (the equivalent operation is not yet supported by \textit{DelayedArray}).
+Sparse matrices were generated with 1\% density of non-zero values.}}
+    \label{fig:matmult}
 \end{figure}
 
 %\begin{figure}[bt]
