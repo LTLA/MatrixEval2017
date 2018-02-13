@@ -1,23 +1,27 @@
 # This makes pretty plots of all timing sets.
 
 plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, lower=NULL, upper=NULL, ylab="Time (ms)", ...) {
+    # Adjusting boundaries. 
     yranges <- range(data$Time)
     if (!is.null(lower)) {
         yranges[1] <- lower
     }
     if (!is.null(upper)) {
-        yranges[2] <- upper        
+        yranges[2] <- upper
     }
 
+    # Creating the empty plot.
     xranges <- range(data[,wrt])
     by.method <- split(data[,c(wrt, "Time")], data$Type, drop=TRUE)
     par(mar=c(5.1, 5.1, 4.1, 2.1))
     plot(1,1,type="n", xlim=xranges, ylim=yranges, log="xy", ylab=ylab, cex.axis=cex.axis, cex.lab=1.4, ..., cex.main=1.4)
  
+    # Adding the horizontal tracking lines.
     line.ranges <- range(log2(yranges))
     line.heights <- 2^seq(floor(line.ranges[1]), ceiling(line.ranges[2]), by=1)
     abline(h=line.heights, lwd=0.5, lty=3, col="grey50")
 
+    # Filling in aesthetic details.
     if (missing(col)) { 
         col <- rep("black", length(by.method)) 
         names(col) <- names(by.method)
@@ -54,15 +58,23 @@ plotter <- function(data, wrt, col, lty, pch, loc="topleft", cex.axis=1.2, lower
 .Rcpp_arma <- "grey70"
 .Rcpp_eigen <- "grey50"
 
+.beachmat_pch_primary <- 16
+.beachmat_pch_secondary <- 17
+.beachmat_pch_tertiary <- 1
+
+.Rcpp_pch <- 18
+.Rcpp_pch_arma <- 15
+.Rcpp_pch_eigen <- 4
+
 ##############################
 # Base plots.
 
 base_cols <- c(beachmat=.beachmat_primary, 
                `beachmat (no copy)`=.beachmat_secondary,
                Rcpp=.Rcpp)
-base_pch <- c(beachmat=16,
-              `beachmat (no copy)`=17,
-              Rcpp=18)
+base_pch <- c(beachmat=.beachmat_pch_primary,
+              `beachmat (no copy)`=.beachmat_pch_secondary,
+              Rcpp=.Rcpp_pch)
 
 incoming <- read.table("../timings_base_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
@@ -85,11 +97,11 @@ sparse_cols <- c(beachmat=.beachmat_primary,
                  RcppArmadillo=.Rcpp_arma,
                  RcppEigen=.Rcpp_eigen)
 
-sparse_pch <- c(beachmat=16,
-                `beachmat (no copy)`=17,
-                `beachmat (dense)`=18,
-                RcppArmadillo=15,
-                RcppEigen=4)
+sparse_pch <- c(beachmat=.beachmat_pch_primary,
+                `beachmat (no copy)`=.beachmat_pch_secondary,
+                `beachmat (dense)`=.beachmat_pch_tertiary,
+                RcppArmadillo=.Rcpp_pch_arma,
+                RcppEigen=.Rcpp_pch_eigen)
 
 incoming <- read.table("../timings_sparse_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
@@ -108,17 +120,16 @@ dev.off()
 # By row.
 
 sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
-                 `beachmat (dense)`=.beachmat_secondary,
+                 `beachmat (dense)`=.beachmat_tertiary,
                  `Rcpp (naive)`=.Rcpp,
                  RcppArmadillo=.Rcpp_arma,
                  RcppEigen=.Rcpp_eigen)
 
-sparse_pch <- c(`beachmat (cached)`=16,
-                `beachmat (dense)`=17,
-                `Rcpp (naive)`=18,
-                RcppArmadillo=15,
-                RcppEigen=4)
-
+sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
+                `beachmat (dense)`=.beachmat_pch_secondary,
+                `Rcpp (naive)`=.Rcpp_pch,
+                RcppArmadillo=.Rcpp_pch_arma,
+                RcppEigen=.Rcpp_pch_eigen)
 
 incoming <- read.table("../timings_sparse_row.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
 incoming$Ngenes <- incoming$Ngenes/1e3
@@ -132,6 +143,28 @@ dev.off()
 pdf("sparse_row_nrow.pdf")
 subincoming <- incoming[incoming$Density==1,]
 plotter(subincoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+dev.off()
+
+# By non-consecutive access.
+
+sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
+                 `beachmat (dense)`=.beachmat_tertiary,
+                 `Rcpp (naive)`=.Rcpp)
+
+sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
+                `beachmat (dense)`=.beachmat_pch_secondary,
+                `Rcpp (naive)`=.Rcpp_pch)
+
+incoming <- read.table("../timings_sparse_row_ordered.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
+incoming$Ngenes <- incoming$Ngenes/1e3
+pdf("sparse_row_ordered.pdf")
+plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"))
+dev.off()
+
+incoming <- read.table("../timings_sparse_row_random.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
+incoming$Ngenes <- incoming$Ngenes/1e3
+pdf("sparse_row_random.pdf")
+plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), loc=NA)
 dev.off()
 
 ##############################
