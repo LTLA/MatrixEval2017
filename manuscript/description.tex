@@ -359,11 +359,10 @@ as well as functions to convert to file layouts that are \revised{well-suited} f
 i.e., contiguous, row- or column-chunking, or $40\times40$ rectangular chunks.
 (a) Column access times with respect to the number of columns, for a dense matrix with 1000 rows.
 (b) Row access times with respect to the number of rows, for a dense matrix with 100 columns.
-Each value shown above represents the time required to access all rows of the matrix, averaged across 10 iterations.
+Each value shown above represents the time required to access the entirety of the matrix, averaged across 10 iterations.
 Horizontal dotted lines represent 2-fold increases in time.}}
 \label{fig:hdf5}
 \end{figure}
-
 
 Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Supplementary Section~\suppsecother{} for details).
 As a general rule, matrix representations that occupy more \revised{RAM} provide faster data access, as data do not need to be unpacked or retrieved from \revised{file}.
@@ -397,7 +396,7 @@ The \beachmat{} API provides a natural solution by moving the entire procedure i
 
 \section*{Results}
 
-\subsection*{Introduction to single-cell RNA sequencing}
+\subsection*{Use cases in single-cell RNA sequencing}
 Recent advances in \revised{scRNA-seq technologies} have led to an explosion in the quantity of data that can be generated in routine experiments.
 Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow transcriptome-wide expression profiles involving 10,000-40,000 genes to be captured in each of thousands to millions of cells.
 Careful computational analysis is critical to extract meaningful biology from these data, but their sheer volume strains existing pipelines and methods designed for single-cell data processing.
@@ -419,22 +418,17 @@ Specifically, row and column accesses from a dense matrix were fastest, followed
 HDF5-backed matrices provided slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for dense matrices and 130 MB for sparse matrices).
 The size of the HDF5 file was also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
 
-\begin{figure}[bt]
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../real/zeisel/pics/zeisel_col.pdf}
-        \caption{}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\textwidth}
-        \includegraphics[width=\textwidth]{../real/zeisel/pics/zeisel_row.pdf}
-        \caption{}
-    \end{subfigure}
-    \caption{Access times for various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
-        (a) \revised{Time required to calculate the column sums for each representation by accessing data from each column.}
-        For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
-        (b) \revised{Time required to calculate the row sums for each representation by accessing data from each row.}
-        For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
-        Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
-    }
+\begin{figure}[btp]
+    \begin{center}
+        \includegraphics[width=\textwidth]{Figure4.pdf}
+    \end{center}
+    \caption{\revised{Timing for data access and calculation of common metrics from} various matrix representations of the mouse brain data set from Zeisel \textit{et al.} \cite{zeisel2015brain}.
+(a) \revised{Time required to calculate the column sums for each representation by accessing data from each column.}
+For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
+(b) \revised{Time required to calculate the row sums for each representation by accessing data from each row.}
+For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
+Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
+\revised{(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the \code{colSums} method in R.}}
     \label{fig:zeisel}
 \end{figure}
 
