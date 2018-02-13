@@ -45,7 +45,7 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
     overwrite <- FALSE 
     writeToFile(Type="HDF5 (rectangle)", Ngenes=ngenes, Ncells=ncells,
                 timings=hdf5.sq.time, file="timings_hdf5_col.txt", overwrite=overwrite)
-    writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, 
+    writeToFile(Type="dense", Ngenes=ngenes, Ncells=ncells, 
                 timings=def.time, file="timings_hdf5_col.txt", overwrite=overwrite)
 }
 
@@ -74,7 +74,7 @@ for (ngenes in c(10000, 20000, 50000, 100000)) {
     overwrite <- FALSE 
     writeToFile(Type="HDF5 (rectangle)", Ngenes=ngenes, Ncells=ncells,
                 timings=hdf5.rect.time, file="timings_hdf5_row.txt", overwrite=overwrite)
-    writeToFile(Type="simple", Ngenes=ngenes, Ncells=ncells, 
+    writeToFile(Type="dense", Ngenes=ngenes, Ncells=ncells, 
                 timings=def.time, file="timings_hdf5_row.txt", overwrite=overwrite)
 }
 

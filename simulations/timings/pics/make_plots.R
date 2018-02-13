@@ -145,7 +145,7 @@ subincoming <- incoming[incoming$Density==1,]
 plotter(subincoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), loc=NA)
 dev.off()
 
-# By non-consecutive access.
+# By non-consecutive rows.
 
 sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
                  `beachmat (dense)`=.beachmat_tertiary,
@@ -170,47 +170,87 @@ dev.off()
 ##############################
 # Making HDF5 plots.
 
+hdf5_cols <- c(`HDF5 (rectangle)`=.beachmat_primary,
+               `HDF5 (column)`=.beachmat_secondary,
+               `dense`=.beachmat_tertiary)
+
+hdf5_pch <- c(`HDF5 (rectangle)`=.beachmat_pch_primary,
+              `HDF5 (column)`=.beachmat_pch_secondary,
+              `dense`=.beachmat_pch_tertiary)
+
 incoming <- read.table("../timings_hdf5_col.txt", header=TRUE, sep="\t")
-incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (column)", "HDF5 (rectangle)")) 
 incoming$Ncells <- incoming$Ncells/1e3
 
 pdf("HDF5_col_ncol.pdf")
-plotter(incoming, "Ncells", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of columns ("*10^3*")"), 
+plotter(incoming, "Ncells", hdf5_cols, pch=hdf5_pch, xlab=expression("Number of columns ("*10^3*")"), 
         main="Column access", cex.axis=1, lower=16, upper=16000)
 dev.off()
 
 incoming <- read.table("../timings_hdf5_row.txt", header=TRUE, sep="\t")
-incoming$Type <- factor(incoming$Type, c("simple", "HDF5 (row)", "HDF5 (rectangle)")) 
 incoming$Ngenes <- incoming$Ngenes/1e3
 
+names(hdf5_cols) <- sub("column", "row", names(hdf5_cols))
+names(hdf5_pch) <- sub("column", "row", names(hdf5_pch))
+
 pdf("HDF5_row_nrow.pdf")
-plotter(incoming, "Ngenes", c("black", "red", "blue"), pch=c(16, 17, 18), xlab=expression("Number of rows ("*10^3*")"), 
+plotter(incoming, "Ngenes", hdf5_cols, pch=hdf5_pch, xlab=expression("Number of rows ("*10^3*")"), 
         main="Row access", cex.axis=1, lower=16, upper=16000)
 dev.off()
 
-# Layout type.
+##############################
+# Layout type; this involves a separate colour scheme.
+
+layout_cols <- c(Contiguous="darkolivegreen",
+                 `Column chunks`="forestgreen",
+                 `Row chunks`="limegreen",
+                 `Rectangular chunks`="yellowgreen")
+layout_pch <- c(Contiguous=17,
+                `Column chunks`=15,
+                `Row chunks`=18,
+                `Rectangular chunks`=16)
+
+# By column:
 
 incoming <- read.table("../timings_hdf5_col_layout.txt", header=TRUE, sep="\t")
 incoming <- incoming[-grep("uncompressed", incoming$Type),]
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rectangular chunks")) 
 
 pdf("HDF5_col_layout.pdf")
-plotter(incoming, "Ncells", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), 
-        xlab="Number of columns", main="Column access", cex.axis=1, upper=50000)
+plotter(incoming, "Ncells", layout_cols, pch=layout_pch,
+    xlab="Number of columns", main="Column access (consecutive)", cex.axis=1, upper=50000)
 dev.off()
+
+# By row:
 
 incoming <- read.table("../timings_hdf5_row_layout.txt", header=TRUE, sep="\t")
 incoming <- incoming[-grep("uncompressed", incoming$Type),]
-incoming$Type <- factor(incoming$Type, c("Contiguous", "Column chunks", "Row chunks", "Rectangular chunks")) 
 incoming$Time <- incoming$Time/1e3
 
 pdf("HDF5_row_layout.pdf")
-plotter(incoming, "Ngenes", c("grey50", "red", "tan4", "blue"), pch=c(16, 17, 15, 18), 
-        xlab="Number of rows", main="Row access", cex.axis=1, ylab="Time (s)", yaxt="n", loc=NA)
+plotter(incoming, "Ngenes", layout_cols, pch=layout_pch,
+    xlab="Number of rows", main="Row access (consecutive)", cex.axis=1, ylab="Time (s)", yaxt="n", loc=NA)
 ticks <- c(10^(-2:2))
 axis(2, at=ticks, ticks)
 dev.off()
 
+# By column (random):
+
+incoming <- read.table("../timings_hdf5_col_layout_random.txt", header=TRUE, sep="\t")
+
+pdf("HDF5_col_layout_random.pdf")
+plotter(incoming, "Ncells", layout_cols, pch=layout_pch,
+    xlab="Number of columns", main="Column access (random)", cex.axis=1, loc=NA)
+dev.off()
+
+# By row (random):
+
+incoming <- read.table("../timings_hdf5_row_layout_random.txt", header=TRUE, sep="\t")
+
+pdf("HDF5_row_layout_random.pdf")
+plotter(incoming, "Ngenes", layout_cols, pch=layout_pch,
+    xlab="Number of rows", main="Row access (random)", cex.axis=1, loc=NA)
+dev.off()
+
+##############################
 # Rechunking
 
 incoming <- read.table("../chunking/timings_rechunk_col.txt", header=TRUE, sep="\t")
