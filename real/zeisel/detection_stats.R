@@ -3,10 +3,21 @@ library(Matrix)
 library(HDF5Array)
 library(DelayedMatrixStats)
 
-chunksize <- 100
-Ngenes <- 10000
-Ncells <- 1000
-options(DelayedArray.block.size=Ngenes*chunksize*8) # Avoid just loading the entire matrix in, which would be misleading.
+infile <- "expression_mRNA_17-Aug-2014.txt"
+counts <- read.delim(infile, stringsAsFactors=FALSE, header=FALSE, row.names=1, skip=11)[,-1] # First column after row names is some useless filler.
+
+# Setting up the different representations:
+
+dense.counts <- as.matrix(counts)
+storage.mode(dense.counts) <- "double" # for proper comparison with sparse matrix.
+
+sparse.counts <- as(Matrix(dense.counts), "dgCMatrix")
+
+chunksize <- 200
+hdf5.counts <- writeHDF5Array(dense.counts, chunk_dim=c(chunksize, chunksize), level=6)
+options(DelayedArray.block.size=nrow(counts)*chunksize*8) # Avoid just loading the entire matrix in, which would be misleading.
+
+# Running across all modes.
 
 for (mode in c("library_sizes", "detect_cells", "detect_genes")) { 
     if (mode=="library_sizes") {
@@ -31,20 +42,14 @@ for (mode in c("library_sizes", "detect_cells", "detect_genes")) {
         beach.hdf5.time <- default.hdf5.time <- numeric(10)
 
     for (it in 1:10) {
-        a <- matrix(runif(1e6), Ngenes, Ncells)
-        beach.dense.time[it] <- timeExprs(bFUN(a))
-        default.dense.time[it] <- timeExprs(rFUNd(a))
+        beach.dense.time[it] <- timeExprs(bFUN(dense.counts))
+        default.dense.time[it] <- timeExprs(rFUNd(dense.counts))
 
-        a3 <- rsparsematrix(Ngenes, Ncells, 0.01)
-        beach.sparse.time[it] <- timeExprs(bFUN(a3))
-        default.sparse.time[it] <- timeExprs(rFUNs(a3)) 
+        beach.sparse.time[it] <- timeExprs(bFUN(sparse.counts))
+        default.sparse.time[it] <- timeExprs(rFUNs(sparse.counts)) 
     
-        fpaths <- "det_tmp.h5"
-        if (file.exists(fpaths)) { unlink(fpaths) }
-        a2 <- writeHDF5Array(a, fpaths[1], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
-        beach.hdf5.time[it] <- timeExprs(bFUN(a2), times=1)
-        default.hdf5.time[it] <- timeExprs(rFUNh(a2), times=1)
-        unlink(fpaths) 
+        beach.hdf5.time[it] <- timeExprs(bFUN(hdf5.counts), times=1)
+        default.hdf5.time[it] <- timeExprs(rFUNh(hdf5.counts), times=1)
     }
     
     overwrite <- TRUE
