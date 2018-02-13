@@ -240,49 +240,44 @@ We also demonstrate how beachmat can be incorporated into the code of other pack
 \linenumbers
 
 \section*{Introduction}
-Recent advances in single-cell RNA sequencing (scRNA-seq) technologies have led to an explosion in the quantity of data that can be generated in routine experiments.
-Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow transcriptome-wide expression profiles involving 10,000-40,000 genes to be captured in each of thousands to millions of cells.
-Careful computational analysis is critical to extract meaningful biology from these data, but their sheer volume strains existing pipelines and methods designed for single-cell data processing.
-The data analysis challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
-Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
-
-The statistical programming language R \cite{R} is a key platform for processing and exploring scRNA-seq data sets.
+The statistical programming language R \cite{R}, \revised{in conjunction with the Bioconductor project \cite{gentleman2004bioconductor}}, provides \revised{the pre-eminent} platform for \revised{exploring and analyzing genomics} data.
 R provides efficient, rigorously tested, open-source implementations of many statistical and numerical procedures.
 Its interactive nature lends itself to data exploration and research, while its programming features allow assembly of complex analyses.
 It is also extensible through the installation of optional ``packages", often contributed by the research community, which contain bespoke methods for specific scientific problems.
-In particular, the Bioconductor project \cite{gentleman2004bioconductor,huber2015orchestrating} provides packages for biological data analysis, many of which implement established methods for single-cell `omics data analysis \cite{trapnell2014dynamics,lun2016pooling,mccarthy2017scater,finak2015mast}
+In particular, the Bioconductor project \cite{huber2015orchestrating} provides \revised{over a thousand} packages for analyzing \revised{high-throughput} biological data in fields such as genomics, transcriptomics and proteomics.
 Packages are mostly written in R but can also include native code (in C/C++ or Fortran) for computationally intensive tasks.
 Use of native C++ code is facilitated by the \textit{Rcpp} package \cite{eddelbuettel2011seamless}, which simplifies the integration of package code with the R application programming interface (API).
 
-In its simplest form, a scRNA-seq data set consists of a matrix where each column is a cell, each row is a gene, and the value of each matrix entry is set to the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that cell.
-This is most directly represented in R as a simple matrix, where each entry is explicitly stored in \revised{random access} memory \revised{(RAM)} in a dense contiguous array.
+\revised{A matrix of measurements is a common starting point in many analysis workflows for high-throughput biological data.
+A typical example is the expression matrix in transcriptomics data, where each row represents a gene, each column represents a sample and each entry represents the quantified expression (e.g., number of mapped reads, transcripts-per-million) for that gene in that sample.
+By default, this is represented in R as a dense matrix}, where each entry is explicitly stored in \revised{random access} memory \revised{(RAM)} in a dense contiguous array.
 Alternatively, it can be represented as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
-This exploits the low capture efficiencies of current scRNA-seq protocols \cite{grun2015design} that are responsible for the high frequency of zeroes in the data.
 Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data are stored in \revised{a file} and parts of it are loaded into \revised{RAM} upon request.
-In each case, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
+\revised{These alternative representations allow efficient handling of large matrices in R, without requiring the use of large amounts of RAM to construct a dense array.}
+For each representation, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
 This simplifies software development and improves interoperability.
 
 Unfortunately, \revised{the use of alternative matrix representations is less straightforward for} compiled code written in statically typed languages like C++.
 \revised{Existing interfaces for reading R matrices in C/C++ require the details of the matrix representation to be specified during compilation.}
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
-Writing multiple versions for different representations is difficult and unsustainable when more representations become available.
+Writing multiple versions \revised{of a function} for different representations is difficult and unsustainable when more representations become available.
 The alternative is to perform all processing in R to exploit the availability of common methods.
 However, this is an unappealing option for high-performance code.
 R is often slower than C++ by at least an order of magnitude for arbitrary programming tasks that cannot be ``vectorized'', i.e., made to operate on all elements of a vector at once.
-This includes common procedures in scRNA-seq data analysis such as looping across all cells or genes and performing arbitrarily complex operations on the cell- or gene-specific expression profiles.
-The use of R alone would increase the computational time required to perform analyses, which is inconvenient for small scripts, undesirable for interactive analyses and unacceptable for large simulation studies.
-It would clearly be preferable to implement critical functions (including loops) in native code wherever possible.
+This includes common procedures in \revised{biological} data analysis such as looping across all \revised{samples} or genes and performing arbitrarily complex operations on the \revised{sample-} or gene-specific \revised{observations}.
+The use of R alone would increase the computational time required to perform analyses, which is inconvenient for interactive analyses and unacceptable for large simulation studies.
+It would clearly be preferable to implement critical functions in native code wherever possible.
 
 % One might think to simply move the inside of the loop in C++ to migitate the interpretation cost, while keeping the loop at the R level to access row- or column-level data.
 % However, this involves some costs on its own, e.g., memory allocations that were previously one-offs need to be re-performed.
 % If you need to share data across iterations, it will also involve more function calls to store relevant variables, so the cost of function calls is not avoided.
 
-Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each Matrix Type), which enables access to R matrix data in a manner that is agnostic to the exact matrix representation.
-This allows developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes, including simple matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
-Using simulated and real scRNA-seq data, we assess the performance of \beachmat{} for data access from each matrix representation.
+Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each Matrix Type), which enables \revised{C++ code to} access R matrix data in a manner that is agnostic to the exact matrix representation.
+This allows \revised{package} developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes, including \revised{the default} dense matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
+Using simulated and real \revised{genomics} data, we assess the performance of \beachmat{} for data access from each matrix representation.
 We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of different representations in different settings.
-We also demonstrate how \beachmat{} can be used by other Bioconductor packages to empower the analysis of a very large scRNA-seq data set. 
-By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing scRNA-seq and other large matrix data.
+We also demonstrate how \beachmat{} can be used by other Bioconductor packages to empower the analysis of a very large \revised{single-cell RNA sequencing (scRNA-seq)} data set. 
+By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing \revised{high-throughput biological data stored in large matrices}.
 
 \section*{Design and implementation}
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
@@ -368,10 +363,19 @@ The \beachmat{} API provides a natural solution by moving the entire procedure i
 
 \section*{Results}
 
+\subsection*{Introduction to single-cell RNA sequencing}
+Recent advances in \revised{scRNA-seq technologies} have led to an explosion in the quantity of data that can be generated in routine experiments.
+Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow transcriptome-wide expression profiles involving 10,000-40,000 genes to be captured in each of thousands to millions of cells.
+Careful computational analysis is critical to extract meaningful biology from these data, but their sheer volume strains existing pipelines and methods designed for single-cell data processing.
+The data analysis challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
+Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
+\revised{The increasing size of these data sets motivates the use of alternative matrix representations to store the data as well as the efficient implementation of analysis methods in native code.
+Thus, single-cell data analysis is a highly relevant use case for \beachmat{}, which we will explore in the following sections.}
+
 \subsection*{Access times for a small brain data set}
 We evaluated the performance of \beachmat{} with the different matrix representations on real scRNA-seq data from a study of the mouse brain by Zeisel \textit{et al.} \cite{zeisel2015brain} (Supplementary Section~\suppsecrealzeisel{}). 
 This data set contains integer expression values for 19972 genes in each of 3005 brain cells, derived from different regions of the brain and consisting of a diverse range of cell types.
-Only 18\% of expression values in the matrix are non-zero.
+Only 18\% of expression values in the matrix are non-zero, \revised{reflecting the low capture efficiencies in single-cell transcriptomics experiments} \cite{grun2015design}.
 The Zeisel \textit{et al.} data set is not particularly large, especially in the context of droplet-based experiments that routinely generate transcriptome-wide data for tens of thousands of cells.
 However, for our purposes, the smaller number of cells in this data set is desirable as it means that each of the matrix representations -- including those that are stored \revised{wholly in RAM} -- can be easily evaluated and compared.
 
