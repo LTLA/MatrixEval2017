@@ -45,12 +45,12 @@ for (mode in c("library_sizes", "detect_cells", "detect_genes")) {
 
     X <- seq_along(vals) + counter/5
     segments(X, vals, X, 1, lty=3)
-    points(X, vals, col=colors, pch=pchs[counter+1])
+    points(X, vals, col=colors, pch=pchs[counter+1], cex=1.5)
     counter <- counter + 1
 }
 axis(side=1, at=seq_along(colors)+1/5, labels=sub(" ", "\n", names(colors)), line=1, tick=FALSE)
 
 par(mar=c(5.1, 0.1, 2.1, 0.1))
 plot.new()
-legend("left", col="black", pch=pchs, c("Library size per cell", "Number of cells per gene", "Number of genes per cell"))
+legend("left", col="black", pch=pchs, c("Library size per cell", "Number of cells per gene", "Number of genes per cell"), pt.cex=1.5)
 dev.off()

@@ -216,7 +216,7 @@ incoming <- incoming[-grep("uncompressed", incoming$Type),]
 
 pdf("HDF5_col_layout.pdf")
 plotter(incoming, "Ncells", layout_cols, pch=layout_pch,
-    xlab="Number of columns", main="Column access (consecutive)", cex.axis=1, upper=50000)
+    xlab="Number of columns", main="Column access", cex.axis=1, upper=50000)
 dev.off()
 
 # By row:
@@ -227,7 +227,7 @@ incoming$Time <- incoming$Time/1e3
 
 pdf("HDF5_row_layout.pdf")
 plotter(incoming, "Ngenes", layout_cols, pch=layout_pch,
-    xlab="Number of rows", main="Row access (consecutive)", cex.axis=1, ylab="Time (s)", yaxt="n", loc=NA)
+    xlab="Number of rows", main="Row access", cex.axis=1, ylab="Time (s)", yaxt="n", loc=NA)
 ticks <- c(10^(-2:2))
 axis(2, at=ticks, ticks)
 dev.off()
@@ -238,7 +238,7 @@ incoming <- read.table("../timings_hdf5_col_layout_random.txt", header=TRUE, sep
 
 pdf("HDF5_col_layout_random.pdf")
 plotter(incoming, "Ncells", layout_cols, pch=layout_pch,
-    xlab="Number of columns", main="Column access (random)", cex.axis=1, loc=NA)
+    xlab="Number of columns", main="Column access", cex.axis=1, loc=NA)
 dev.off()
 
 # By row (random):
@@ -247,7 +247,7 @@ incoming <- read.table("../timings_hdf5_row_layout_random.txt", header=TRUE, sep
 
 pdf("HDF5_row_layout_random.pdf")
 plotter(incoming, "Ngenes", layout_cols, pch=layout_pch,
-    xlab="Number of rows", main="Row access (random)", cex.axis=1, loc=NA)
+    xlab="Number of rows", main="Row access", cex.axis=1, loc=NA)
 dev.off()
 
 ##############################
