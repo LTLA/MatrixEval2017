@@ -137,7 +137,7 @@ incoming$Density <- incoming$Density * 100
 
 pdf("sparse_row_density.pdf")
 subincoming <- incoming[incoming$Ngenes==10,]
-plotter(subincoming, "Density", col=sparse_cols, pch=sparse_pch, xlab="Density (%)", upper=max(subincoming$Time)*1.1)
+plotter(subincoming, "Density", col=sparse_cols, pch=sparse_pch, xlab="Density (%)", upper=max(subincoming$Time)*1.3)
 dev.off()
 
 pdf("sparse_row_nrow.pdf")
@@ -152,19 +152,19 @@ sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
                  `Rcpp (naive)`=.Rcpp)
 
 sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
-                `beachmat (dense)`=.beachmat_pch_secondary,
+                `beachmat (dense)`=.beachmat_pch_tertiary,
                 `Rcpp (naive)`=.Rcpp_pch)
 
 incoming <- read.table("../timings_sparse_row_ordered.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
 incoming$Ngenes <- incoming$Ngenes/1e3
 pdf("sparse_row_ordered.pdf")
-plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"))
+plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), main="Ordered")
 dev.off()
 
 incoming <- read.table("../timings_sparse_row_random.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
 incoming$Ngenes <- incoming$Ngenes/1e3
 pdf("sparse_row_random.pdf")
-plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), loc=NA)
+plotter(incoming, "Ngenes", col=sparse_cols, pch=sparse_pch, xlab=expression("Number of rows ("*10^3*")"), main="Random", loc=NA)
 dev.off()
 
 ##############################
@@ -238,7 +238,7 @@ incoming <- read.table("../timings_hdf5_col_layout_random.txt", header=TRUE, sep
 
 pdf("HDF5_col_layout_random.pdf")
 plotter(incoming, "Ncells", layout_cols, pch=layout_pch,
-    xlab="Number of columns", main="Column access", cex.axis=1, loc=NA)
+    xlab="Number of columns", main="Column access", cex.axis=1, upper=max(incoming$Time)*4)
 dev.off()
 
 # By row (random):
