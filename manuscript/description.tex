@@ -427,9 +427,11 @@ However, for our purposes, the smaller number of cells in this data set is desir
 
 We converted the Zeisel \textit{et al.} data to the various matrix representations and measured the access speed for the row- or column-level data with \beachmat{}.
 We observed similar results to those obtained with simulated data, recapitulating the different trade-offs between \revised{access} speed and \revised{RAM} usage across representations.
-Specifically, row and column accesses from a dense matrix were fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}).
+Specifically, row and column accesses from a dense matrix were fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}a, b).
 HDF5-backed matrices provided slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for dense matrices and 130 MB for sparse matrices).
 The size of the HDF5 file was also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
+\revised{We also recorded the time required to compute some gene- or cell-specific metrics (Figure~\ref{fig:zeisel}c, Supplementary Section~\suppsecrealzeisel{}) commonly used in scRNA-seq data analysis.
+Our custom C++ functions based on \beachmat{} were at least comparable to the built-in R functions, and were faster in some cases by avoiding a type conversion to a logical matrix.}
 
 \begin{figure}[btp]
     \begin{center}
@@ -441,7 +443,7 @@ For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200
 (b) \revised{Time required to calculate the row sums for each representation by accessing data from each row.}
 For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
 Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
-\revised{(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the \code{colSums} method in R.}}
+\revised{(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the relevant built-in methods in R.}}
     \label{fig:zeisel}
 \end{figure}
 

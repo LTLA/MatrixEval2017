@@ -433,6 +433,13 @@ For each representation, timings of the calculation of row or column sums were p
 This was repeated 10 times to obtain an average time.
 Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
 
+\revised{We also timed the calculation of other metrics such as the number of detected genes per cell and the number of expressing cells per gene.
+This was achieved by writing custom C++ functions based on \beachmat{} using no-copy column access methods, i.e., \code{get\_const\_col\_indexed()}.
+For each metric, we recorded the time required as previously described, and compared to implementations written in R using \code{rowSums} or \code{colSums} after coercion to a logical matrix.
+We used the base \code{rowSums}/\code{colSums} methods for simple matrices, methods in \textit{Matrix} for sparse matrices, and methods in \textit{DelayedMatrixStats} (\url{https://bioconductor.org/packages/DelayedMatrixStats}) for HDF5-backed matrices.
+We repeated the timings for the library size for each cell with \beachmat{} or R's \code{colSums}.
+Note that this differs from the timings of the column sums above, which uses the default copy-on-access methods.}
+
 \subsection{Analysis of the 1.3 million brain cell data set}
 We obtained the 1.3 million brain cell data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons})
 and converted it into a \code{HDF5Matrix} object with rectangular chunks using the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}).
