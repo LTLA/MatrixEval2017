@@ -116,8 +116,10 @@ For other matrix representations, the same method will simply dispatch to the de
 This means that read-only column access can be performed with \code{get\_const\_col()} regardless of the representation, while taking advantage of the structure of dense matrices for greater efficiency.}
 
 \subsection{Performance with sparse matrices}
+
+\subsubsection{Overview of the CSC format}
 The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format (Supplementary Figure~\ref{fig:sparsefig}).
-Consider that every non-zero entry in a sparse matrix can be characterized by a triplet: row $i$, column $j$ and data value $x$.
+Consider that every non-zero entry in a sparse matrix can be characterized by a triplet \revised{of values}: row $i$, column $j$ and data value $x$.
 To convert this into the CSC format, entries are sorted in order of increasing $i + mj$.
 All entries with the same value of $j$ are now grouped together in the ordered sequence.
 We refer to each column-based group as $G_j$, the entries of which are sorted internally in order of increasing $i$.
@@ -125,18 +127,30 @@ The representation is further compressed by discarding $j$ from each triplet.
 All entries from the same column lie at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
 This reduces \revised{RAM} usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
-For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their simpler ``dense'' counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
+For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their dense counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
+\subsubsection{\revised{Timings for column access}}
 The CSC format simplifies data access from sparse matrices by imposing structure on the non-zero entries.
 When accessing a particular column $j$, all corresponding entries in $G_j$ can be quickly extracted by taking the relevant stretch of the ordered sequence.
-For sparse matrices with a low density of non-zero values, column access via \beachmat{} is even faster than access from simple matrices (Supplementary Figure~\ref{fig:sparsecol}).
-This is because only a few non-zero entries need to be copied -- the rest of the \code{Vector} can be rapidly filled with zeroes.
-As the density increases, column access becomes slower but is still comparable to that of simple matrices.
-We note that the \textit{RcppArmadillo} package \cite{eddelbuettel2014arma} also handles sparse matrices via the \code{SpMat} class.
-This provides faster column-level access than the \beachmat{} API as no copying of data is performed -- see above for a related discussion with simple matrices.
+For sparse matrices with a low density of non-zero values, column access via \beachmat{} is even faster than access from \revised{an equivalent dense} matrix (Supplementary Figure~\ref{fig:sparsecol}).
+This is because only a few non-zero \revised{$x$ values} need to be copied \revised{from the internal data structure} -- the rest of the \revised{output} \code{Vector} can be rapidly filled with zeroes.
+As the density increases, column access becomes slower but is still comparable to that of \revised{dense} matrices.
 
+\revised{As explained above for dense matrices, \beachmat{} defaults to copy-on-access to retrieve column data from sparse matrices.
+This is the case regardless of whether \code{get\_col()} or \code{get\_const\_col()} is used, as both must explicitly return the zero entries for representation-agnostic behaviour.
+To improve performance, the \beachmat{} API instead provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
+This returns a tuple containing the number of matrix elements stored in the representation, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
+For CSC matrices, iterators can be directly returned to the internal $i$ and $x$ vectors.
+For other representations, this method dispatches to \code{get\_const\_col()}, which also avoids copying for dense matrices while providing representation-agnostic behaviour.}
+
+\revised{Without copying, \beachmat{} is over an order of magnitude faster than the default method for column-level access (Supplementary Figure~\ref{fig:sparsecol}).
+This is also slightly faster than column access through} the \textit{RcppArmadillo} \revised{and \textit{RcppEigen} packages \cite{eddelbuettel2014arma,bates2013fast}, which} also handle sparse matrices via the \revised{\code{sp\_mat} and \code{MappedSparseMatrix} classes, respectively}.
+\revised{However, it should be noted that part of \beachmat{}'s speed-up with \code{get\_const\_col\_indexed()} is driven by the fact that the zero entries of the sparse matrix are completely ignored.
+Whether or not this is desirable depends on the calling function.}
+
+\subsubsection{\revised{Timings for row access}}
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
 If a row is requested, a binary search needs to be performed on the values of $i$ in $G_j$ for each column $j$, which requires an average time proportional to $\log(m)$.
 In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
@@ -166,6 +180,7 @@ This ensures that the API is consistent with non-sparse representations but is i
 User-level code can subsequently switch between different access methods and algorithms for optimum performance, depending on whether the input matrix is sparse or dense.
 In general, we recommend this approach only for performance-critical parts of the code.
 Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
+
 
 \subsection{Performance with HDF5-based matrices}
 For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvious option is to store the \revised{the data in a file} and load submatrices into memory as required.
