@@ -1,6 +1,6 @@
 # This makes bar plots of row/column access times.
 
-colors <- c(`dense`="darkblue",
+colors <- c(`ordinary`="darkblue",
             `sparse`="blue",
             `HDF5 (column)`="dodgerblue",
             `HDF5 (rectangle)`="lightblue")
@@ -25,8 +25,8 @@ dev.off()
 
 # This makes bar plots of timing comparisons to R.
 
-colors <- c(`dense (beachmat)`="darkblue",
-            `dense (R)`="darkblue",
+colors <- c(`ordinary (beachmat)`="darkblue",
+            `ordinary (R)`="darkblue",
             `sparse (beachmat)`="blue",
             `sparse (R)`="blue",
             `HDF5 (beachmat)`="dodgerblue",
