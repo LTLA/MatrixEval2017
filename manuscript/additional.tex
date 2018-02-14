@@ -182,7 +182,7 @@ For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvi
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a data set in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
-Each \code{HDF5Matrix} instance provides methods to mimic a \code{matrix} object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
+Each \code{HDF5Matrix} instance provides methods to mimic a \revised{\code{matrix}} object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the disk space requirements are manageable, even if multiple large matrices need to be generated to hold intermediate results throughout an analysis.
 
 The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
@@ -194,7 +194,7 @@ This suggests that the \code{HDF5Matrix} representation should be used sparingly
 
 A key determinant of the performance of the \code{HDF5Matrix} representation is the layout of data in the HDF5 file.
 There are two layout choices for large matrices: contiguous or chunked.
-In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of simple matrices in memory.
+In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of \revised{dense} matrices in memory.
 \revised{(Technically, HDF5 uses a row-major format, but a transposition is internally performed when constructing a \code{HDF5Matrix}.)}
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
 For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
@@ -230,6 +230,21 @@ Another option for \revised{constructing file-backed} matrices is to use the \te
 This constructs an in-memory \code{big.matrix} object that contains external pointers to a \revised{file in which the data are stored.}
 In \beachmat{}, we have deliberately chosen \code{HDF5Matrix} rather than \code{big.matrix} due to the standardized nature of the HDF5 specification and portability of HDF5 files across systems.
 Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big.matrix} inputs if required.
+
+\begin{color}{red}
+\subsection{Using each representation in matrix multiplication}
+To explore the performance of \beachmat{} for more complex operations, we implemented a matrix multiplication operation in C++.
+We considered the multiplication of two square matrices of order ranging from 500-2000, using dense matrices containing random values from a normal distribution;
+sparse matrices generated using \code{rsparsematrix} with 1\% density;
+or HDF5-backed matrices filled with random normal values.
+Multiplication of low-density sparse matrices was fastest while HDF5-backed matrices were slowest (Supplementary Figure~\ref{fig:matmult}), consistent with our previous access timings.
+For comparison, timings were also obtained for the \code{\%*\%} operator in R (from the base package, for dense matrices; 
+from the \textit{Matrix} package, for sparse matrices;
+or from the \textit{DelayedArray} package, for HDF5-backed matrices).
+We observed that the performance of our implementation for dense and HDF5-backed matrices was comparable to the representation-specific \code{\%*\%} operators,
+despite our use of a naive algorithm that was not cache optimized.
+For sparse matrices, a different algorithm that exploits sparsity in both left- and right-side matrices was even faster than \code{\%*\%} from \textit{Matrix}.
+\end{color}
 
 \section{Optimizing HDF5 chunk cache parameters}
 \label{sec:layoutoptim}
@@ -601,13 +616,9 @@ Horizontal dotted lines represent 2-fold increases in time.}}
     \end{center}
     \caption{\revised{Time required to perform matrix multiplication between square dense matrices, between sparse matrices or between a HDF5-backed matrix and a dense matrix,
 as a function of the order of the matrix.     
-Matrix multiplication was performed using a simple algorithm implemented in C++ with \beachmat{}.
-For comparison, timings were also obtained for the \code{\%*\%} operator in R (base R for dense matrices; 
-    from the \textit{Matrix} package, for sparse matrices;
-    or from the \textit{DelayedArray} package, for HDF5-backed matrices).
+Matrix multiplication was performed using a simple algorithm implemented in C++ with \beachmat{}, or the representation-specific \code{\%*\%} operators in R.
 For sparse matrix multiplication, timings are also provided for an alternative algorithm implemented in \beachmat{} that better exploits sparsity (II). 
-The time required to multiply two HDF5-backed matrices together is also shown for \beachmat{} only (the equivalent operation is not yet supported by \textit{DelayedArray}).
-Sparse matrices were generated with 1\% density of non-zero values.}}
+Timings for the multiplication of two HDF5-backed matrices are shown for \beachmat{} only, as the equivalent operation is not yet supported by \textit{DelayedArray}.}}
     \label{fig:matmult}
 \end{figure}
 
