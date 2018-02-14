@@ -93,13 +93,13 @@ dev.off()
 
 sparse_cols <- c(beachmat=.beachmat_primary,
                  `beachmat (no copy)`=.beachmat_secondary,
-                 `beachmat (dense)`=.beachmat_tertiary,
+                 `beachmat (ordinary)`=.beachmat_tertiary,
                  RcppArmadillo=.Rcpp_arma,
                  RcppEigen=.Rcpp_eigen)
 
 sparse_pch <- c(beachmat=.beachmat_pch_primary,
                 `beachmat (no copy)`=.beachmat_pch_secondary,
-                `beachmat (dense)`=.beachmat_pch_tertiary,
+                `beachmat (ordinary)`=.beachmat_pch_tertiary,
                 RcppArmadillo=.Rcpp_pch_arma,
                 RcppEigen=.Rcpp_pch_eigen)
 
@@ -120,13 +120,13 @@ dev.off()
 # By row.
 
 sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
-                 `beachmat (dense)`=.beachmat_tertiary,
+                 `beachmat (ordinary)`=.beachmat_tertiary,
                  `Rcpp (naive)`=.Rcpp,
                  RcppArmadillo=.Rcpp_arma,
                  RcppEigen=.Rcpp_eigen)
 
 sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
-                `beachmat (dense)`=.beachmat_pch_secondary,
+                `beachmat (ordinary)`=.beachmat_pch_secondary,
                 `Rcpp (naive)`=.Rcpp_pch,
                 RcppArmadillo=.Rcpp_pch_arma,
                 RcppEigen=.Rcpp_pch_eigen)
@@ -148,11 +148,11 @@ dev.off()
 # By non-consecutive rows.
 
 sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
-                 `beachmat (dense)`=.beachmat_tertiary,
+                 `beachmat (ordinary)`=.beachmat_tertiary,
                  `Rcpp (naive)`=.Rcpp)
 
 sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
-                `beachmat (dense)`=.beachmat_pch_tertiary,
+                `beachmat (ordinary)`=.beachmat_pch_tertiary,
                 `Rcpp (naive)`=.Rcpp_pch)
 
 incoming <- read.table("../timings_sparse_row_ordered.txt", header=TRUE, stringsAsFactors=FALSE, sep="\t")
@@ -172,11 +172,11 @@ dev.off()
 
 hdf5_cols <- c(`HDF5 (rectangle)`=.beachmat_primary,
                `HDF5 (column)`=.beachmat_secondary,
-               `dense`=.beachmat_tertiary)
+               `ordinary`=.beachmat_tertiary)
 
 hdf5_pch <- c(`HDF5 (rectangle)`=.beachmat_pch_primary,
               `HDF5 (column)`=.beachmat_pch_secondary,
-              `dense`=.beachmat_pch_tertiary)
+              `ordinary`=.beachmat_pch_tertiary)
 
 incoming <- read.table("../timings_hdf5_col.txt", header=TRUE, sep="\t")
 incoming$Ncells <- incoming$Ncells/1e3
@@ -278,29 +278,29 @@ dev.off()
 ##############################
 # Matrix multiplication. Again, this involves a different suite of colors. 
 
-mult_cols <- c(`dense (beachmat)`="darkblue",
-               `dense (R)`="darkblue",
+mult_cols <- c(`ordinary (beachmat)`="darkblue",
+               `ordinary (R)`="darkblue",
                `sparse (beachmat)`="blue",
                `sparse (beachmat II)`="blue",
                `sparse (R)`="blue",
-               `HDF5/dense (beachmat)`="dodgerblue",
-               `HDF5/dense (R)`="dodgerblue",
+               `HDF5/ordinary (beachmat)`="dodgerblue",
+               `HDF5/ordinary (R)`="dodgerblue",
                `HDF5/HDF5 (beachmat)`="dodgerblue")
 
-mult_pch <- c(`dense (beachmat)`=16,
-              `dense (R)`=17,
+mult_pch <- c(`ordinary (beachmat)`=16,
+              `ordinary (R)`=17,
               `sparse (beachmat)`=18,
               `sparse (beachmat II)`=15,
               `sparse (R)`=4,
-              `HDF5/dense (beachmat)`=1,
+              `HDF5/ordinary (beachmat)`=1,
               `HDF5/HDF5 (beachmat)`=2,
-              `HDF5/dense (R)`=3)
+              `HDF5/ordinary (R)`=3)
 
-mult_lty <- c(`dense (beachmat)`=1,
-              `dense (R)`=2,
-              `HDF5/dense (beachmat)`=1,
+mult_lty <- c(`ordinary (beachmat)`=1,
+              `ordinary (R)`=2,
+              `HDF5/ordinary (beachmat)`=1,
               `HDF5/HDF5 (beachmat)`=1,
-              `HDF5/dense (R)`=2,
+              `HDF5/ordinary (R)`=2,
               `sparse (beachmat)`=1,
               `sparse (beachmat II)`=1,
               `sparse (R)`=2)

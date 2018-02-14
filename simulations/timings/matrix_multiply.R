@@ -34,12 +34,12 @@ for (n in c(500, 1000, 2000)) {
         unlink(fpaths)
     }
     
-    writeToFile(Type="dense (beachmat)", N=n, timings=beach.dense.time, file="timings_mat_mult.txt", overwrite=overwrite)
+    writeToFile(Type="ordinary (beachmat)", N=n, timings=beach.dense.time, file="timings_mat_mult.txt", overwrite=overwrite)
     overwrite <- FALSE 
-    writeToFile(Type="dense (R)", N=n, timings=default.dense.time, file="timings_mat_mult.txt", overwrite=overwrite)
-    writeToFile(Type="HDF5/dense (beachmat)", N=n, timings=beach.hdf5.time, file="timings_mat_mult.txt", overwrite=overwrite)
+    writeToFile(Type="ordinary (R)", N=n, timings=default.dense.time, file="timings_mat_mult.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5/ordinary (beachmat)", N=n, timings=beach.hdf5.time, file="timings_mat_mult.txt", overwrite=overwrite)
     writeToFile(Type="HDF5/HDF5 (beachmat)", N=n, timings=beach.hdf5.time2, file="timings_mat_mult.txt", overwrite=overwrite)
-    writeToFile(Type="HDF5/dense (R)", N=n, timings=default.hdf5.time, file="timings_mat_mult.txt", overwrite=overwrite)
+    writeToFile(Type="HDF5/ordinary (R)", N=n, timings=default.hdf5.time, file="timings_mat_mult.txt", overwrite=overwrite)
     writeToFile(Type="sparse (beachmat)", N=n, timings=beach.sparse.time, file="timings_mat_mult.txt", overwrite=overwrite)
     writeToFile(Type="sparse (beachmat II)", N=n, timings=beach.sparse.time2, file="timings_mat_mult.txt", overwrite=overwrite)
     writeToFile(Type="sparse (R)", N=n, timings=default.sparse.time, file="timings_mat_mult.txt", overwrite=overwrite)
