@@ -126,7 +126,7 @@ sparse_cols <- c(`beachmat (cached)`=.beachmat_primary,
                  RcppEigen=.Rcpp_eigen)
 
 sparse_pch <- c(`beachmat (cached)`=.beachmat_pch_primary,
-                `beachmat (ordinary)`=.beachmat_pch_secondary,
+                `beachmat (ordinary)`=.beachmat_pch_tertiary,
                 `Rcpp (naive)`=.Rcpp_pch,
                 RcppArmadillo=.Rcpp_pch_arma,
                 RcppEigen=.Rcpp_pch_eigen)
