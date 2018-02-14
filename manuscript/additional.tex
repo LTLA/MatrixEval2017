@@ -67,9 +67,11 @@ $^3$European Molecular Biology Laboratory (EMBL), Genome Biology Unit, 69117 Hei
 
 \subsection{Access timings with simulated data}
 Double-precision dense matrices of specified dimension were filled with values sampled from a standard normal distribution.
-By default, \revised{dense} matrices were constructed using \revised{the \code{matrix} function}.
+By default, all \revised{dense} matrices were constructed using \revised{the \code{matrix} function}.
 Double-precision CSC matrices of a specified dimension and density were generated as \code{dgCMatrix} instances, using the \code{rsparsematrix} function from the \textit{Matrix} package.
-Conversion of each matrix object into other \revised{R} representations, if necessary, was performed prior to timing access with the C++ APIs.
+\revised{HDF5-backed matrices were generated using the \code{writeHDF5Array} function from the \textit{HDF5Array} package, using explicitly specified chunk sizes.}
+Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
+\revised{(This only refers to representations at the R level -- any conversions at the C++ level were considered to be part of the API and were timed accordingly.)}
 
 To time row and column access with \beachmat{} and other APIs, we wrote C++ functions (one per API) that compute the sum of values in each row or column, respectively.
 \revised{This approach} ensures that each entry of the row/column is visited in order to use its value, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
