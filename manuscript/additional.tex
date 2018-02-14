@@ -66,12 +66,12 @@ $^3$European Molecular Biology Laboratory (EMBL), Genome Biology Unit, 69117 Hei
 \section{Performance of beachmat on different matrices}
 
 \subsection{Access timings with simulated data}
-Double-precision dense matrices of specified dimension were filled with values sampled from a standard normal distribution.
-By default, all \revised{dense} matrices were constructed using \revised{the \code{matrix} function}.
+Double-precision \revised{ordinary} matrices of specified dimension were filled with values sampled from a standard normal distribution.
+All \revised{ordinary} matrices were constructed using \revised{the \code{matrix} function}.
 Double-precision CSC matrices of a specified dimension and density were generated as \code{dgCMatrix} instances, using the \code{rsparsematrix} function from the \textit{Matrix} package.
-\revised{HDF5-backed matrices were generated using the \code{writeHDF5Array} function from the \textit{HDF5Array} package, using explicitly specified chunk sizes.}
+\revised{HDF5-backed matrices were generated using the \code{writeHDF5Array} function from the \textit{HDF5Array} package on the ordinary matrices with explicitly specified chunk sizes.}
 Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
-\revised{(This only refers to representations at the R level -- any conversions at the C++ level were considered to be part of the API and were timed accordingly.)}
+\revised{(This only refers to representations at the R level -- any conversions in C++ were considered to be part of the API and timed accordingly.)}
 
 To time row and column access with \beachmat{} and other APIs, we wrote C++ functions (one per API) that compute the sum of values in each row or column, respectively.
 \revised{This approach} ensures that each entry of the row/column is visited in order to use its value, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
@@ -89,31 +89,31 @@ In all cases, standard errors were negligible and not plotted.
 In practice, the magnitude of differences in access speed between representations depends on many factors such as the amount of microprocessor cache memory, speed of reading data from files on different storage media, etc.
 These factors will not be considered here for simplicity.}
 
-\subsection{Performance with dense matrices}
+\subsection{Performance with ordinary matrices}
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
-We refer to this format as a \revised{dense} matrix.
-The dense matrix is easy to manipulate and the time required to access \revised{all of its data elements} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
-However, \revised{fast data access comes at the cost of random access memory (RAM) usage that} is directly proportional to \revised{the length of the one-dimensional array}.
+We refer to this format as \revised{an ordinary R} matrix.
+The \revised{ordinary} matrix is easy to manipulate and the time required to access \revised{all of its data elements} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
+However, \revised{fast access comes at the cost of random access memory (RAM) usage that} is directly proportional to \revised{the length of the one-dimensional array}.
 For example, a double-precision matrix containing \revised{scRNA-seq} data for 10000 genes in each of one million cells would require 80 GB of RAM.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
 Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.
-Thus, the utility of \revised{dense} matrices is limited to relatively small data sets.
+Thus, the \revised{use of ordinary} matrices is limited to relatively small data sets.
 
 % While R doesn't copy if you don't modify, it _does_ copy if you do modify, rather tha overwriting the old version.
 % Consider computing log2-normalized counts; it's four copies (first transpose, division, second transpose, log-transformation).
 
-We compared the access speed of the \beachmat{} API on \revised{dense} matrices to that of a reference implementation using only \textit{Rcpp}.
+We compared the access speed of the \beachmat{} API on \revised{ordinary} matrices to that of a reference implementation using only \textit{Rcpp}.
 Both row and column access via \beachmat{} require 20-50\% more time compared to \textit{Rcpp} (Supplementary Figure~\ref{fig:basetime}).
 \revised{This is because, for each requested} row/column, \beachmat{} copies the \revised{corresponding} matrix data into a \code{Vector} \revised{for access by the calling function}.
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
 Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in \revised{RAM}.
 Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for \revised{external} libraries such as LAPACK that accept a pointer to a contiguous block of memory.
 
-Nonetheless, for read-only access to column data, developers can direct \beachmat{} to return an iterator directly to the start of the column \revised{of a dense matrix}.
+Nonetheless, for read-only access to column data, developers can direct \beachmat{} to return an iterator directly to the start of the column \revised{of an ordinary matrix}.
 This \revised{\code{get\_const\_col()} method} avoids copying and \revised{yields performance equivalent to \textit{Rcpp} (Supplementary Figure~\ref{fig:basetime}a).
 For other matrix representations, the same method will simply dispatch to the default copy-on-access function \code{get\_col()}.
-This means that read-only column access can be performed with \code{get\_const\_col()} regardless of the representation, while taking advantage of the structure of dense matrices for greater efficiency.}
+This means that read-only column access can be performed with \code{get\_const\_col()} regardless of the representation, while taking advantage of the structure of ordinary matrices for greater efficiency.}
 
 \subsection{Performance with sparse matrices}
 
@@ -127,35 +127,35 @@ The representation is further compressed by discarding $j$ from each triplet.
 All entries from the same column lie at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
 This reduces \revised{RAM} usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
-For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their dense counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
+For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their \revised{ordinary} counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
 \subsubsection{\revised{Timings for column access}}
 The CSC format simplifies data access from sparse matrices by imposing structure on the non-zero entries.
 When accessing a particular column $j$, all corresponding entries in $G_j$ can be quickly extracted by taking the relevant stretch of the ordered sequence.
-For sparse matrices with a low density of non-zero values, column access via \beachmat{} is even faster than access from \revised{an equivalent dense} matrix (Supplementary Figure~\ref{fig:sparsecol}).
+For sparse matrices with a low density of non-zero values, column access via \beachmat{} is even faster than access from \revised{an equivalent ordinary} matrix (Supplementary Figure~\ref{fig:sparsecol}).
 This is because only a few non-zero \revised{$x$ values} need to be copied \revised{from the internal data structure} -- the rest of the \revised{output} \code{Vector} can be rapidly filled with zeroes.
-As the density increases, column access becomes slower but is still comparable to that of \revised{dense} matrices.
+As the density increases, column access becomes slower but is still comparable to that of \revised{ordinary} matrices.
 
-\revised{As explained above for dense matrices, \beachmat{} defaults to copy-on-access to retrieve column data from sparse matrices.
+\revised{As explained above for ordinary matrices, \beachmat{} defaults to copy-on-access to retrieve column data from sparse matrices.
 This is the case regardless of whether \code{get\_col()} or \code{get\_const\_col()} is used, as both must explicitly return the zero entries for representation-agnostic behaviour.
 To improve performance, the \beachmat{} API instead provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
 This returns a tuple containing the number of matrix elements stored in the representation, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
 For CSC matrices, iterators can be directly returned to the internal $i$ and $x$ vectors.
-For other representations, this method dispatches to \code{get\_const\_col()}, which also avoids copying for dense matrices while providing representation-agnostic behaviour.}
+For other representations, this method dispatches to \code{get\_const\_col()}, which also avoids copying for ordinary matrices while providing representation-agnostic behaviour.}
 
 \revised{Without copying, \beachmat{} is over an order of magnitude faster than the default method for column-level access (Supplementary Figure~\ref{fig:sparsecol}).
-This is also slightly faster than column access through} the \textit{RcppArmadillo} \revised{and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}, which} also handle sparse matrices via the \revised{\code{sp\_mat} and \code{MappedSparseMatrix} classes, respectively}.
-\revised{However, note that part of \beachmat{}'s speed-up is driven by the fact that the zero entries of the sparse matrix are completely ignored.
-Whether or not this is desirable depends on the calling function.
-For highly sparse data, it is possible to design efficient algorithms that avoid processing the zeroes, though we only recommend this for performance-critical parts of the code.
+It is also slightly faster than column access through} the \textit{RcppArmadillo} \revised{and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}, which can handle sparse matrices through the \code{sp\_mat} and \code{MappedSparseMatrix} classes, respectively}.
+\revised{We note that part of \beachmat{}'s speed-up is due by the fact that the zero entries of the sparse matrix are completely ignored.
+Whether or not this is desirable depends on the algorithm being implemented.
+Indeed, it is possible to use one algorithm for sparse matrices and another for dense matrices, though we only recommend doing so for performance-critical parts of an application.
 Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.}
 
 \subsubsection{\revised{Timings for row access}}
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
 If a row is requested, a binary search needs to be performed on the values of $i$ in $G_j$ for each column $j$, which requires an average time proportional to $\log(m)$.
-In contrast, obtaining the next element in a row of a dense matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
+In contrast, obtaining the next element in a row of an ordinary matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
 If row $i$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than $i$.
 When $i+1$ is requested, we simply need to check if each of the indices should be incremented by one.
@@ -170,9 +170,9 @@ If greater, we use the stored indices to set the start of the binary search \rev
 This reduces the search space and the amount of computational work for large $m$\revised{, yielding in an approximate 2-fold increase in speed when the non-consecutive rows are ordered (Supplementary Figure~\ref{fig:sparserowrandom}a).
 Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly better at large $m$.}
 
-Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with \revised{dense matrices (Figure~2a)}.
+Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with \revised{ordinary matrices (Figure~2a)}.
 This is not surprising as there is less work to do when retrieving data from a simpler representation.
-The exception is with large matrices of low density \revised{(Figure~2b), probably because} the cost of retrieving non-contiguous blocks of \revised{RAM} from a \revised{dense} matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
+The exception is with large matrices of low density \revised{(Figure~2b), probably because} the cost of retrieving non-contiguous blocks of \revised{RAM} from \revised{an ordinary} matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
 \revised{In addition, consecutive row access} from sparse matrices with \beachmat{} is \revised{30-50 times} faster than using \textit{RcppArmadillo}.
 For a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} takes 39.8 milliseconds to access each row and compute the row sums, while \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for general data access from sparse matrices \revised{in C++ code}.
@@ -182,19 +182,19 @@ For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvi
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a data set in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
-Each \code{HDF5Matrix} instance provides methods to mimic a \revised{\code{matrix}} object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
+Each \code{HDF5Matrix} instance provides methods to mimic \revised{an ordinary matrix}, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the disk space requirements are manageable, even if multiple large matrices need to be generated to hold intermediate results throughout an analysis.
 
 The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
 Specifically, \beachmat{} directly accesses data from the underlying HDF5 file through the official HDF5 C++ API, which has been wrapped in the \textit{Rhdf5lib} package for portability and re-usability in the R package framework.
-This means that very large data sets can be accessed in C++ with the same code that is used for \revised{dense} and sparse matrix representations.
-However, data access is inevitably slower than that from a \revised{dense} matrix as the data need to be read from \revised{file} at regular intervals.
+This means that very large data sets can be accessed in C++ with the same code that is used for \revised{ordinary} and sparse matrix representations.
+However, data access is inevitably slower than that from \revised{an ordinary} matrix as the data need to be read from \revised{file} at regular intervals.
 We observed a 20-fold increase in the time required for column access and a 40-fold increase for row access (Supplementary Figure~\ref{fig:hdf5time}).
 This suggests that the \code{HDF5Matrix} representation should be used sparingly -- if possible, smaller data sets should use alternative in-memory representations for faster access.
 
-A key determinant of the performance of the \code{HDF5Matrix} representation is the layout of data in the HDF5 file.
+A key determinant of the performance of the \code{HDF5Matrix} is the layout of data in the HDF5 file.
 There are two layout choices for large matrices: contiguous or chunked.
-In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of \revised{dense} matrices in memory.
+In the contiguous layout, raw data are flattened into a one-dimensional array analogous to column-major storage of \revised{ordinary} matrices in memory.
 \revised{(Technically, HDF5 uses a row-major format, but a transposition is internally performed when constructing a \code{HDF5Matrix}.)}
 In the chunked layout, data are arranged into ``chunks'' of a pre-defined size.
 For example, in a row-chunked layout, each chunk would correspond to a row of the matrix.
@@ -234,14 +234,14 @@ Nonetheless, we note that it is simple to extend \beachmat{} to accept \code{big
 \begin{color}{red}
 \subsection{Using each representation in matrix multiplication}
 To explore the performance of \beachmat{} for more complex operations, we implemented a matrix multiplication operation in C++.
-We considered the multiplication of two square matrices of order ranging from 500-2000, using dense matrices containing random values from a normal distribution;
+We considered the multiplication of two square matrices of order ranging from 500-2000, using ordinary matrices containing random values from a normal distribution;
 sparse matrices generated using \code{rsparsematrix} with 1\% density;
 or HDF5-backed matrices filled with random normal values.
 Multiplication of low-density sparse matrices was fastest while HDF5-backed matrices were slowest (Supplementary Figure~\ref{fig:matmult}), consistent with our previous access timings.
-For comparison, timings were also obtained for the \code{\%*\%} operator in R (from the base package, for dense matrices; 
+For comparison, timings were also obtained for the \code{\%*\%} operator in R (from the base package, for ordinary matrices; 
 from the \textit{Matrix} package, for sparse matrices;
 or from the \textit{DelayedArray} package, for HDF5-backed matrices).
-We observed that the performance of our implementation for dense and HDF5-backed matrices was comparable to the representation-specific \code{\%*\%} operators,
+We observed that the performance of our implementation for ordinary and HDF5-backed matrices was comparable to the representation-specific \code{\%*\%} operators,
 despite our use of a naive algorithm that was not cache optimized.
 For sparse matrices, a different algorithm that exploits sparsity in both left- and right-side matrices was even faster than \code{\%*\%} from \textit{Matrix}.
 \end{color}
@@ -496,7 +496,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/base_row.pdf}
         \caption{}
     \end{subfigure}
-    \caption{\revised{Time required to access consecutive} columns or rows of \revised{simulated dense} matrices using the \beachmat{} or \textit{Rcpp} APIs.
+    \caption{\revised{Time required to access consecutive} columns or rows of \revised{simulated ordinary} matrices using the \beachmat{} or \textit{Rcpp} APIs.
         (a) Column access time with respect to the number of columns, for a matrix with 10000 rows.
         \revised{For \beachmat{}, timings were also recorded for an access mode that does not copy the data.}
         (b) Row access time with respect to the number of rows, for a matrix with 1000 columns.
@@ -532,7 +532,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_col_ncol.pdf}
         \caption{}
     \end{subfigure}
-    \caption{\revised{Time required to access consecutive columns of simulated} CSC matrices using \beachmat{} \revised{or the \textit{RcppArmadillo} and \textit{RcppEigen} APIs}, compared to an equivalent \revised{dense} matrix with \beachmat{}.
+    \caption{\revised{Time required to access consecutive columns of simulated} CSC matrices using \beachmat{} \revised{or the \textit{RcppArmadillo} and \textit{RcppEigen} APIs}, compared to an equivalent \revised{ordinary} matrix with \beachmat{}.
         \revised{Timings were also recorded for a copy-free column access method in \beachmat{}.}
         (a) Access times with respect to the density of non-zero entries as a percentage of all entries, for a matrix with 10000 rows and 1000 columns.
         (b) Access times with respect to the number of columns, for a matrix with 10000 rows and 1\% density.
@@ -552,7 +552,7 @@ and 30 hours for the randomized PCA.
         \includegraphics[width=\textwidth]{../simulations/timings/pics/sparse_row_random.pdf}
         \caption{}
     \end{subfigure}
-    \caption{\revised{Time required to access non-consecutive rows of simulated CSC matrices using the caching method in \beachmat{} or a naive binary search implemented in \textit{Rcpp}, compared to an equivalent \revised{dense} matrix with \beachmat{}.
+    \caption{\revised{Time required to access non-consecutive rows of simulated CSC matrices using the caching method in \beachmat{} or a naive binary search implemented in \textit{Rcpp}, compared to an equivalent \revised{ordinary} matrix with \beachmat{}.
         (a) Access times for ordered but non-consecutive rows, with respect to the number of rows in a matrix with 10000 rows and 1000 columns at 1\% density.
         This involved accessing every 5\textsuperscript{th} row and returning to the first unaccessed row, i.e., $\{1, 6, \ldots, 9996, 2, 7, \ldots\}$.
         (b) Access times for random rows.
@@ -570,7 +570,7 @@ Horizontal dotted lines represent 2-fold increases in time.}}
         \includegraphics[width=\textwidth]{../simulations/timings/pics/HDF5_row_nrow.pdf}
         \caption{}
     \end{subfigure}
-    \caption{\revised{Time required for \beachmat{} to access consecutive rows or columns} of a \revised{simulated} HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks, compared to \revised{an equivalent dense} matrix.
+    \caption{\revised{Time required for \beachmat{} to access consecutive rows or columns} of a \revised{simulated} HDF5-backed matrix using column/row-chunking or rectangular $100\times100$ chunks, compared to \revised{an equivalent ordinary} matrix.
         (a) Column access time with respect to the number of columns, for a dense matrix with 10000 rows.
         (b) Row access time with respect to the number of rows, for a dense matrix with 1000 columns.
         \revised{Each timing represents the average of 10 simulations, and involves accessing the entirety of the matrix.}
@@ -620,7 +620,7 @@ Horizontal dotted lines represent 2-fold increases in time.}}
     \begin{center}
         \includegraphics[width=0.8\textwidth]{../simulations/timings/pics/mat_mult.pdf}
     \end{center}
-    \caption{\revised{Time required to perform matrix multiplication between square dense matrices, between sparse matrices or between a HDF5-backed matrix and a dense matrix,
+    \caption{\revised{Time required to perform matrix multiplication between square ordinary matrices, between sparse matrices or between a HDF5-backed matrix and an ordinary matrix,
 as a function of the order of the matrix.     
 Matrix multiplication was performed using a simple algorithm implemented in C++ with \beachmat{}, or the representation-specific \code{\%*\%} operators in R.
 For sparse matrix multiplication, timings are also provided for an alternative algorithm implemented in \beachmat{} that better exploits sparsity (II). 
