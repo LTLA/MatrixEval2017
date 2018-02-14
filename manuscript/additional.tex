@@ -81,6 +81,11 @@ This was repeated 10 times with new matrices, and the average time and standard 
 Row and column access times were evaluated with respect to the numbers of rows and columns, respectively.
 For sparse matrices, times were also recorded with respect to the density of non-zero entries.
 In all cases, standard errors were negligible and not plotted.
+\revised{We also ran \code{gc} prior to each call, to reduce the risk of garbage collection during the timing period.}
+
+\revised{It is worth noting that all of these timings were performed on a single computer (see Section~\ref{sec:systemdetails} for details). 
+In practice, the magnitude of differences in access speed between representations depends on many factors such as the amount of microprocessor cache memory, speed of reading data from files on different storage media, etc.
+These factors will not be considered here for simplicity.}
 
 \subsection{Performance with simple matrices}
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
@@ -433,6 +438,7 @@ Coordinates in the PC space for each cell were manually computed from the U and 
 Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} or C++ are not used.
 
 \subsection{Details of the computing environment}
+\label{sec:systemdetails}
 All timings and analyses were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R 3.4.2 and Bioconductor 3.6.
 On this machine, the 10X data analysis required approximately 4 hours for quality control;
 22 hours for cell cycle phase assignment (using three cores);
