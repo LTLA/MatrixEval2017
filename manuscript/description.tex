@@ -169,16 +169,19 @@
 \newcommand{\suppfigsimpleaccess}{1}
 \newcommand{\suppfigsparseschem}{2}
 \newcommand{\suppfigsparsecol}{3}
-\newcommand{\suppfigsparserow}{4}
+\newcommand{\suppfigsparserandom}{4}
 \newcommand{\suppfighdfspeed}{5}
-\newcommand{\suppfighdflayout}{6}
-\newcommand{\suppfighdfrandom}{7}
+\newcommand{\suppfighdfrandom}{6-7}
+\newcommand{\suppfigmatmult}{8}
 
 \newcommand{\suppsecsimdesign}{1.1}
 \newcommand{\suppsecsimple}{1.2}
-\newcommand{\suppsecsparse}{1.3}
+\newcommand{\suppsecsparseschem}{1.3.1}
+\newcommand{\suppsecsparsecol}{1.3.2}
+\newcommand{\suppsecsparserow}{1.3.3}
 \newcommand{\suppsechdfmat}{1.4}
 \newcommand{\suppsecother}{1.5}
+\newcommand{\suppsecmatmult}{1.6}
 \newcommand{\suppseclayoutoptim}{2}
 \newcommand{\suppseclayoutrandom}{3}
 \newcommand{\suppsecrealzeisel}{4.1}
@@ -240,7 +243,7 @@ We also demonstrate how beachmat can be incorporated into the code of other pack
 \linenumbers
 
 \section*{Introduction}
-The statistical programming language R \cite{R}, \revised{in conjunction with the Bioconductor project \cite{gentleman2004bioconductor}}, provides \revised{the pre-eminent} platform for \revised{exploring and analyzing genomics} data.
+The statistical programming language R \cite{R}, \revised{in conjunction with the open-source Bioconductor project \cite{gentleman2004bioconductor}, represents the pre-eminent} platform for \revised{exploring and analyzing genomics} data.
 R provides efficient, rigorously tested, open-source implementations of many statistical and numerical procedures.
 Its interactive nature lends itself to data exploration and research, while its programming features allow assembly of complex analyses.
 It is also extensible through the installation of optional ``packages", often contributed by the research community, which contain bespoke methods for specific scientific problems.
@@ -305,9 +308,9 @@ This pointer is the same regardless of the representation and can be used in dow
 
 Access to matrix data is achieved with common methods in the base class that have specialized implementations in each derived class. 
 When access to a specific row or column (or a \revised{part} thereof) is requested, the \beachmat{} API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
-This \revised{copy-on-access} strategy provides the greatest flexibility for downstream applications, by allowing in-place modifications to vector elements and guaranteeing contiguous data storage. 
-\revised{When accessing column data from dense and sparse matrices, it is also possible to avoid copying altogether for greater efficiency (Supplementary Section~XX).}
-\revised{Finally,} a request for a specific entry of the matrix will directly return the corresponding data value.
+This \revised{copy-on-access strategy ensures that the API behaves consistently across different matrix representations, and} provides flexibility for downstream applications by allowing in-place modifications to vector elements and guaranteeing contiguous data storage. 
+\revised{It is also possible to avoid copying altogether when performing read-only data access from columns of dense or sparse matrices, improving efficiency in certain situations.
+Finally,} a request for a specific entry of the matrix will directly return the corresponding data value.
 
 While the \beachmat{} API is agnostic to the matrix representation, it still needs to know the type of data that are stored in the matrix.
 We use C++ templating to recycle the code to define specific classes for common data types, i.e., logical, integer, double-precision floating point or character strings.
@@ -317,15 +320,16 @@ The same methods are available for all classes of each data type, improving thei
 \revised{\beachmat{} supports data access from dense} R matrices, constructed with the base \texttt{matrix} function or using the \texttt{dgeMatrix} class from the \textit{Matrix} package.
 Here, data are stored in \revised{RAM} as a contiguous dense array in column-major format.
 Using simulated data, we measured the speed of row- or column-level data access from dense matrices with \beachmat{} (Supplementary Section~\suppsecsimdesign{}). 
-We demonstrate that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation for accessing data from these matrices 
+\revised{Our results indicate} that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation for accessing data from these matrices 
 (Supplementary Section~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
 
-\revised{\beachmat{} also supports} sparse matrices in the compressed sparse column-orientated (CSC) format (Supplementary Section~\suppsecsparse{}, Supplementary Figure~\suppfigsparseschem{}), 
-implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
-This representation only stores non-zero values in \revised{RAM}, which \revised{is highly efficient for assays that yield many zeroes, e.g., scRNA-seq}.
-However, the more complex format means that data access from sparse matrices \revised{can be} slower than \revised{the equivalent dense} matrices (Supplementary Figure~\suppfigsparsecol{}).
-We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Figure~\ref{fig:sparse}, Supplementary Section~\suppsecsparse{}).
-\revised{This provides a 4-fold increase in speed compared to a naive approach, as well as faster row-level data access than the \textit{RcppArmadillo} and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}.}
+\revised{\beachmat{} also supports data access from} sparse matrices in the compressed sparse column-orientated (CSC) format (Supplementary Section~\suppsecsparseschem{}, Supplementary Figures~\suppfigsparseschem{}), implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
+This representation only stores non-zero values in \revised{RAM}, which \revised{is highly memory-efficient for assays that yield many zeroes, e.g., scRNA-seq.
+When the density of non-zero entries is low, column access from CSC matrices may also be faster than the equivalent dense matrix (Supplementary Section~\suppsecsparsecol{}, Supplementary Figure~\suppfigsparsecol{}).
+However, row access from CSC matrices is more complex, as obtaining elements from an arbitrary row of the matrix involves a binary search for each column (Supplementary Section~\suppsecsparserow{}).}
+We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Figure~\ref{fig:sparse}).
+\revised{This provides a 4-fold increase in speed compared to a naive approach, as well as faster row-level access than the \textit{RcppArmadillo} and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}.
+Our caching strategy also improves performance for non-consecutive row access (Supplementary Figure~\suppfigsparserandom{}).}
 
 \begin{figure}[btp]
     \begin{center}
@@ -349,13 +353,13 @@ Once read, chunks \revised{can be} cached in memory to avoid redundant retrieval
 To improve performance, \beachmat{} automatically tunes the parameters of the HDF5 chunk cache to optimize data access from consecutive rows or columns (Supplementary Section~\suppseclayoutoptim{}).
 \revised{This allows \beachmat{} to use the same rectangular chunking layout for row and column access (Figure~\ref{fig:hdf5}) with performance comparable to pure row- and column-chunking layouts.}
 We \revised{also} provide functions to choose suitable chunk dimensions during file creation, when consecutive row or column access is expected downstream;
-as well as functions to convert to file layouts that are \revised{well-suited} for random row or column access (Supplementary Figures~\suppfighdfrandom{}, Supplementary Section~\suppseclayoutrandom{}).
+as well as functions to convert to layouts that are \revised{well-suited} for random row or column access (Supplementary Figures~\suppfighdfrandom{}, Supplementary Section~\suppseclayoutrandom{}).
 
 \begin{figure}[btp]
     \begin{center}
         \includegraphics[width=\textwidth]{Figure3.pdf}
     \end{center}
-    \caption{\revised{Timing of \beachmat{}-based access to consecutive columns or rows of a \code{HDF5Matrix} object constructed with different HDF5 file layouts, 
+    \caption{\revised{Timing of \beachmat{}-based access to consecutive columns or rows of a simulated \code{HDF5Matrix} object constructed with different HDF5 file layouts, 
 i.e., contiguous, row- or column-chunking, or $40\times40$ rectangular chunks.
 (a) Column access times with respect to the number of columns, for a dense matrix with 1000 rows.
 (b) Row access times with respect to the number of rows, for a dense matrix with 100 columns.
@@ -366,6 +370,8 @@ Horizontal dotted lines represent 2-fold increases in time.}}
 
 Other representations are also supported, including packed symmetric matrices and matrices based on run-length encodings (see Supplementary Section~\suppsecother{} for details).
 As a general rule, matrix representations that occupy more \revised{RAM} provide faster data access, as data do not need to be unpacked or retrieved from \revised{file}.
+\revised{The exception is that of sparse matrices with few non-zero entries, where the ability to ignore zeroes can dramatically improve performance for certain algorithms.
+Indeed, for a more complicated operation like matrix multiplication, the use of sparse matrices is much faster than dense or HDF5-backed matrices (Supplementary Section~\suppsecmatmult{}, Supplementary Figure~\suppfigmatmult{}), though obviously this depends on the density of non-zero entries.}
 
 \subsection*{Generating matrix output from C++}
 In addition to accessing data in existing matrices, the \beachmat{} API allows C++ code to store data in various representations for output to R.
