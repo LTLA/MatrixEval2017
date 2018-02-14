@@ -182,13 +182,13 @@ For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvi
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a data set in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
-Each \code{HDF5Matrix} instance provides methods to mimic a simple matrix object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
+Each \code{HDF5Matrix} instance provides methods to mimic a \code{matrix} object, allowing users to manipulate the matrix in real time without needing to load all of the data into memory.
 Compression of data in the HDF5 file also ensures that the disk space requirements are manageable, even if multiple large matrices need to be generated to hold intermediate results throughout an analysis.
 
 The \beachmat{} API supports row- and column-level access from a \code{HDF5Matrix} instance.
 Specifically, \beachmat{} directly accesses data from the underlying HDF5 file through the official HDF5 C++ API, which has been wrapped in the \textit{Rhdf5lib} package for portability and re-usability in the R package framework.
-This means that very large data sets can be accessed in C++ with the same code that is used for simple and sparse matrix representations.
-However, data access is inevitably slower than that from a simple matrix as the data need to be read from \revised{file} at regular intervals.
+This means that very large data sets can be accessed in C++ with the same code that is used for \revised{dense} and sparse matrix representations.
+However, data access is inevitably slower than that from a \revised{dense} matrix as the data need to be read from \revised{file} at regular intervals.
 We observed a 20-fold increase in the time required for column access and a 40-fold increase for row access (Supplementary Figure~\ref{fig:hdf5time}).
 This suggests that the \code{HDF5Matrix} representation should be used sparingly -- if possible, smaller data sets should use alternative in-memory representations for faster access.
 
