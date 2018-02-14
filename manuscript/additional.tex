@@ -66,10 +66,10 @@ $^3$European Molecular Biology Laboratory (EMBL), Genome Biology Unit, 69117 Hei
 \section{Performance of beachmat on different matrices}
 
 \subsection{Access timings with simulated data}
-Double-precision dense matrices of a specified dimension were filled with values sampled from a standard normal distribution.
-By default, all dense matrices were constructed in the simple format.
+Double-precision dense matrices of specified dimension were filled with values sampled from a standard normal distribution.
+By default, \revised{dense} matrices were constructed using \revised{the \code{matrix} function}.
 Double-precision CSC matrices of a specified dimension and density were generated as \code{dgCMatrix} instances, using the \code{rsparsematrix} function from the \textit{Matrix} package.
-Conversion of each matrix object into other representations, if necessary, was performed prior to timing access with the C++ APIs.
+Conversion of each matrix object into other \revised{R} representations, if necessary, was performed prior to timing access with the C++ APIs.
 
 To time row and column access with \beachmat{} and other APIs, we wrote C++ functions (one per API) that compute the sum of values in each row or column, respectively.
 \revised{This approach} ensures that each entry of the row/column is visited in order to use its value, avoiding trivially fast approaches where a pointer or iterator is returned to the start of the column/row.
@@ -87,29 +87,31 @@ In all cases, standard errors were negligible and not plotted.
 In practice, the magnitude of differences in access speed between representations depends on many factors such as the amount of microprocessor cache memory, speed of reading data from files on different storage media, etc.
 These factors will not be considered here for simplicity.}
 
-\subsection{Performance with simple matrices}
+\subsection{Performance with dense matrices}
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
-We refer to this format as a ``simple matrix''.
-The simple matrix is easy to manipulate and the time required to access \revised{all of its data elements} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
+We refer to this format as a \revised{dense} matrix.
+The dense matrix is easy to manipulate and the time required to access \revised{all of its data elements} is linear with respect to the number of rows/columns (Supplementary Figure~\ref{fig:basetime}).
 However, \revised{fast data access comes at the cost of random access memory (RAM) usage that} is directly proportional to \revised{the length of the one-dimensional array}.
-For example, a double-precision matrix containing data for 10000 genes in each of one million cells would require 80 GB of RAM.
+For example, a double-precision matrix containing \revised{scRNA-seq} data for 10000 genes in each of one million cells would require 80 GB of RAM.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
 Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.
-Thus, the utility of simple matrices is limited to relatively small scRNA-seq data sets.
+Thus, the utility of \revised{dense} matrices is limited to relatively small data sets.
 
 % While R doesn't copy if you don't modify, it _does_ copy if you do modify, rather tha overwriting the old version.
 % Consider computing log2-normalized counts; it's four copies (first transpose, division, second transpose, log-transformation).
 
-We compare the access speed of the \beachmat{} API on simple matrices to that of a reference implementation using only \textit{Rcpp}.
+We compared the access speed of the \beachmat{} API on \revised{dense} matrices to that of a reference implementation using only \textit{Rcpp}.
 Both row and column access via \beachmat{} require 20-50\% more time compared to \textit{Rcpp} (Supplementary Figure~\ref{fig:basetime}).
-This is expected as \beachmat{} is built on top of \textit{Rcpp}, so the former will not be faster than the latter.
-Another reason is that, at each row/column access, \beachmat{} copies the matrix data into a \code{Vector} by default.
+\revised{This is because, for each requested} row/column, \beachmat{} copies the \revised{corresponding} matrix data into a \code{Vector} \revised{for access by the calling function}.
 The reference implementation avoids the overhead of creating a new copy by simply iterating across the original data.
 Our use of copying is deliberate as it ensures that the API is consistent across matrix representations -- for example, file-based representations \textit{must} copy the data to a new location in \revised{RAM}.
-Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for libraries such as LAPACK that accept a pointer to a contiguous block of memory.
-Nonetheless, for read-only access to column data in a simple matrix, developers can direct \beachmat{} to return an iterator directly to the start of the column.
-This avoids copying and allows for some optimization in certain scenarios.
+Copying is also required for operations that involve transformations and/or re-ordering of data, as well as for \revised{external} libraries such as LAPACK that accept a pointer to a contiguous block of memory.
+
+Nonetheless, for read-only access to column data, developers can direct \beachmat{} to return an iterator directly to the start of the column \revised{of a dense matrix}.
+This \revised{\code{get\_const\_col()} method} avoids copying and \revised{yields performance equivalent to \textit{Rcpp} (Supplementary Figure~\ref{fig:basetime}a).
+For other matrix representations, the same method will simply dispatch to the default copy-on-access function \code{get\_col()}.
+This means that read-only column access can be performed with \code{get\_const\_col()} regardless of the representation, while taking advantage of the structure of dense matrices for greater efficiency.}
 
 \subsection{Performance with sparse matrices}
 The \code{dgCMatrix} class from the \textit{Matrix} package stores sparse matrix data in compressed sparse column-orientated (CSC) format (Supplementary Figure~\ref{fig:sparsefig}).
