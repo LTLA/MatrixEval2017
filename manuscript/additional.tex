@@ -383,25 +383,24 @@ Obviously, this is irrelevant when accessing data from existing HDF5 files where
 \subsection{Testing different layouts with simulated data}
 We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
 For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
-The contiguous layout is the fastest as only one \revised{chunk} needs to be \revised{read from file} per column (Supplementary Figure~\ref{fig:hdf5layout}).
+The contiguous layout is the fastest as \revised{all relevant data can be obtained in one read from file} per column \revised{(Figure~3a)}.
 Column-wise chunking also involves a single \revised{chunk} read per column, but is slower due to the overhead of decompression and chunk caching.
 Rectangular chunking is slightly slower than column-wise chunks, despite the optimized size of the cache -- this is attributable to the time spent collecting data across multiple cached chunks.
 As expected, row-wise chunks is the slowest as each column access effectively processes data from the entire matrix.
 
-The results are reversed for row access, where row-wise chunking is the layout that provides the best performance with \beachmat{} (Supplementary Figure~\ref{fig:hdf5layout}).
-This is expected as only one \revised{chunk} read is required per row, compared to multiple reads with column-wise chunking.
-We emphasize that rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
-This highlights the utility of rectangular chunks for both row and column accesses, compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
-The contiguous layout is also slow as multiple reads are required to access the non-contiguous data from each row.
+The timing results are reversed for row access, where row-wise chunking is the layout that provides the best performance with \beachmat{} \revised{(Figure~3b)}.
+This is expected as only one \revised{chunk} read is required per row, compared to multiple reads with column-wise chunking \revised{or a contiguous layout}.
+Rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
+This highlights the utility of rectangular chunks for both row and column accesses \revised{with \beachmat{}},
+compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
 
 \section{Dealing with random access from a \texttt{HDF5Matrix}}
 \label{sec:random}
 
 The timings above were obtained by accessing data from consecutive rows or columns.
 The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will contain the next requested row or column.
-(We omit the situation where the entire matrix is loaded into the cache.
-If this were possible, a simple matrix representation would have sufficed.)
-In such cases, pure row- or column-based chunks may be necessary for optimal performance.
+(We omit the situation where the entire matrix is loaded into the cache\revised{, as this defeats the purpose of file-backed storage.})
+In such cases, pure row- or column-based chunks may be necessary for optimal performance \revised{(Supplementary Figure~\ref{fig:hdf5layoutrandom})}.
 However, the best layout is not clear at the time of file creation, especially for scRNA-seq data where it is sensible to access data by gene (row) or cell (column).
 Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
 
@@ -589,7 +588,7 @@ Horizontal dotted lines represent 2-fold increases in time.}}
         \revised{Each row or column in the matrix was accessed exactly once in random order.}
         Horizontal dotted lines represent 2-fold increases in time.
     }
-    \label{fig:hdf5layout}
+    \label{fig:hdf5layoutrandom}
 \end{figure}
 
 \begin{figure}[bt]
