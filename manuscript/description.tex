@@ -255,9 +255,17 @@ A typical example is the expression matrix in transcriptomics data, where each r
 By default, this is represented in R as an ``ordinary'' matrix}, where each entry is explicitly stored in \revised{random access} memory \revised{(RAM)} in a dense contiguous array.
 Alternatively, it can be represented as a sparse matrix using classes from the \textit{Matrix} package \cite{bates2017matrix}, which saves memory by only storing non-zero entries.
 Another option is to use file-backed representations such as those in the \textit{bigmemory} \cite{kane2013scalable} or \textit{HDF5Array} packages, where the data are stored in \revised{a file} and parts of it are loaded into \revised{RAM} upon request.
-\revised{These alternative representations allow efficient handling of large matrices in R, without requiring the use of large amounts of RAM to construct a dense array.}
 For each representation, methods are provided in R for common operations such as subsetting, transposition and arithmetic, such that any downstream code for data processing can be agnostic to the exact representation of the matrix.
 This simplifies software development and improves interoperability.
+
+\revised{The major benefit of alternative representations is that they allow efficient handling of large matrices in R without using large amounts of RAM to construct a dense array.
+This is particularly important for the analysis of current biological data sets due to the increasing throughput of the experiments.
+It is well known that the output of DNA sequencing machines has risen consistently over the past decade \cite{reuter2015high}, which is compounded by the increasing complexity of the assays.
+For example, droplet-based protocols in single-cell transcriptomics \cite{macosko2015highly,klein2015droplet,zheng2017massively} allow generation of transcriptome-wide expression profiles for each of thousands or even millions of cells.
+Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} yielding data for individual genomic regions or base positions, respectively.
+Analyses of these large data sets often involve a considerable amount of interactive data exploration where the matrix might be transformed, subsetted or rearranged.
+Given R's copy-on-write semantics, matrix representations that achieve efficient memory usage throughout the course of an analysis are highly desirable.
+}
 
 Unfortunately, \revised{the use of alternative matrix representations is less straightforward for} compiled code written in statically typed languages like C++.
 \revised{Existing interfaces for reading R matrices in C/C++ require the details of the matrix representation to be specified during compilation.}
@@ -413,9 +421,8 @@ Recent advances in \revised{scRNA-seq technologies} have led to an explosion in 
 Droplet-based methods such as Drop-Seq \cite{macosko2015highly}, inDrop \cite{klein2015droplet} and GemCode \cite{zheng2017massively} allow transcriptome-wide expression profiles involving 10,000-40,000 genes to be captured in each of thousands to millions of cells.
 Careful computational analysis is critical to extract meaningful biology from these data, but their sheer volume strains existing pipelines and methods designed for single-cell data processing.
 The data analysis challenge is compounded by the presence of large-scale projects such as the Human Cell Atlas \cite{regev2017human}, which aims to use single-cell `omics to profile every cell type in the human body.
-Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} providing region- to base-level resolution of biochemical events (chromatin accessibility and DNA methylation, respectively).
 \revised{The increasing size of these data sets motivates the use of alternative matrix representations to store the data as well as the efficient implementation of analysis methods in native code.
-Thus, single-cell data analysis is a highly relevant use case for \beachmat{}, which we will explore in the following sections.}
+This presents itself as a highly relevant use case for \beachmat{}, which we will explore in the following sections.}
 
 \subsection*{Access times for a small brain data set}
 We evaluated the performance of \beachmat{} with the different matrix representations on real scRNA-seq data from a study of the mouse brain by Zeisel \textit{et al.} \cite{zeisel2015brain} (Supplementary Section~\suppsecrealzeisel{}). 
