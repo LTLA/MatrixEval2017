@@ -214,7 +214,7 @@ for (ngenes in c(1000, 2000, 5000)) {
         out.byrow <- writeHDF5Array(dense.counts, fpaths[3], name="yay", chunk_dim=c(1, ncells), level=6) 
         out.rect <- writeHDF5Array(dense.counts, fpaths[4], name="yay", chunk_dim=c(40, 40), level=6)
  
-        o <- order(ngenes)
+        o <- sample(ngenes)
         contig.time[it] <- timeExprs(BeachmatRowSumRandom(out.contig, o), times=1)
         colchunk.time[it] <- timeExprs(BeachmatRowSumRandom(out.bycol, o), times=1)
         rowchunk.time[it] <- timeExprs(BeachmatRowSumRandom(out.byrow, o), times=1)
