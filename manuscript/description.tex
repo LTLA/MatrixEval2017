@@ -186,6 +186,7 @@
 \newcommand{\suppseclayoutrandom}{3}
 \newcommand{\suppsecrealzeisel}{4.1}
 \newcommand{\suppsecrealtenx}{4.2}
+\newcommand{\suppsecrealsystem}{4.3}
 
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
@@ -330,7 +331,7 @@ Using simulated data, we measured the speed of row- or column-level data access 
 \revised{Our results indicate} that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation 
 (Supplementary Section~\suppsecsimple{}, Supplementary Figure~\suppfigsimpleaccess{}). 
 
-\revised{\beachmat{} also supports data access from} sparse matrices in the compressed sparse column-orientated (CSC) format (Supplementary Section~\suppsecsparseschem{}, Supplementary Figures~\suppfigsparseschem{}), implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
+\revised{\beachmat{} also supports data access from} sparse matrices in the compressed sparse column-orientated (CSC) format (Supplementary Section~\suppsecsparseschem{}, Supplementary Figure~\suppfigsparseschem{}), implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
 This representation only stores non-zero values in \revised{RAM}, which \revised{is highly memory-efficient for assays that yield many zeroes, e.g., scRNA-seq.
 When the density of non-zero entries is low, column access from CSC matrices may also be faster than the equivalent ordinary matrix (Supplementary Section~\suppsecsparsecol{}, Supplementary Figure~\suppfigsparsecol{}).
 However, row access from CSC matrices is more complex, as obtaining elements from an arbitrary row of the matrix involves a binary search for each column (Supplementary Section~\suppsecsparserow{}).}
@@ -499,7 +500,7 @@ This can be stored as \revised{an ordinary} matrix and supplied directly to othe
 At this point, memory usage ceases to be an issue and we only need to choose algorithms that are scalable with respect to the number of cells.
 
 While a full characterisation of this data set is outside the scope of this article, it is clear that we can proceed through many parts of the scRNA-seq analysis pipeline using \beachmat{}-driven C++ functions.
-By taking advantage of the file-backed \code{HDF5Matrix}, this analysis can be conducted in reasonable time on a desktop with modest specifications (see Methods).
+By taking advantage of the file-backed \code{HDF5Matrix}, this analysis can be conducted in reasonable time on a desktop with modest specifications (see \revised{Supplementary Section~\suppsecrealsystem{}}).
 These features allow us to obtain biological insights that previously would have been inaccessible from R.
 We also note that the incorporation of the \beachmat{} API only required small modifications to existing C++ code for scRNA-seq data analysis.
 This indicates that many established methods in the R/Bioconductor ecosystem can be easily and immediately extended to work with large data sets,
