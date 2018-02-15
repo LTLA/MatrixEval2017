@@ -251,12 +251,12 @@ For sparse matrices, a different algorithm that exploits sparsity in both left- 
 
 \subsection{Overview}
 Matrix data in HDF5 files can be partitioned into chunks \cite{hdf5chunk}, where each chunk is a submatrix of the same dimensions.
-When a particular row or column of the matrix is requested, the HDF5 library will read all chunks that are overlapped by the requested row/column.
+When a row or column of the matrix is requested, the HDF5 library will read all chunks that are overlapped by the requested row/column.
 Each chunk is read from \revised{file} in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
-This is wasteful as more data needs to be processed than is required for the current request.
+This is \revised{inefficient} as more data needs to be processed than is required for the current request.
 To improve performance, \revised{the HDF5 library will cache a small number of} chunks in memory once they are read \revised{from file}.
 This means that \revised{the cached chunks} do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
-Chunks are then evicted from the cache once the \revised{cache size} limit is exceeded or if the hash indices \revised{of different chunks} overlap \revised{(see Section~\ref{sec:slotchoice})}.
+Chunks are then evicted from the cache once the \revised{cache size} limit is exceeded or if the hash indices \revised{of different chunks} overlap \revised{(see Supplementary Section~\ref{sec:slotchoice})}.
 This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
 However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
 
@@ -267,7 +267,7 @@ We further assume that these data are stored in a chunked layout, where the numb
 
 The chunk size $s$ should be chosen so that it can hold all chunks lying across a row or column.
 Each chunk contains $pq$ values, and each row and column overlaps $\myceil{n/q}$ and $\myceil{m/p}$ chunks, respectively.
-This reflects the fact that each chunk is stored in its entirety, even at the right/bottom edges of the matrix where each chunk may not be completely filled.
+This reflects the fact that each chunk is stored in its entirety, even at the right/bottom edges of the matrix where \revised{a} chunk may not be completely filled.
 For row access, this means that 
 \begin{equation}
 s \ge \myceil{n/q}pq \;, 
@@ -277,9 +277,10 @@ i.e., all chunks overlapping a particular row are held in memory. Simliarly, for
 s \ge \myceil{m/p}pq \;.
 \end{equation}
 This ensures that all chunks overlapping a particular row or column are retained in memory.
-Otherwise, if the cache size is too small, existing chunks in the cache will be evicted before the current row or column is fully read.
-(By default, the HDF5 chunk cache operates on a first-in-first-out basis when full.)
+Otherwise, if \revised{$s$} is too small, existing chunks in the cache \revised{would} be evicted before the current row or column is fully read.
 This would preclude the use of the cache to rapidly load data for the next row or column.
+
+% Note that partial edge filtering is turned on by default: https://support.hdfgroup.org/HDF5/doc/RM/H5P/H5Pset_chunk_opts.htm.
 
 \subsection{Choosing the number of slots}
 \label{sec:slotchoice}
@@ -322,7 +323,7 @@ However, for new files, we have an opportunity to choose the chunk dimensions to
 \revised{To access data from a particular row, we need to read all chunks overlapped by that row, i.e., $\myceil{n/q}$ chunks}.
 Once these are loaded into the cache, no more chunks \revised{need to be read from file} to access the next $p-1$ rows, i.e., data are held in memory for all $p$ rows simultaneously.
 For comparison, consider a layout containing row chunks, i.e., each chunk is an entire row.
-This provides the most efficient access to any single row as \revised{one chunk} obtains all and only that row's data.
+This provides efficient access to any single row as \revised{one chunk} obtains all and only that row's data.
 To access $p$ rows from a row-chunked layout, $p$ \revised{chunks would need to be read from file}.
 Thus, for accessing consecutive rows with $p \times q$ chunks, \revised{we can read the same number of chunks (or fewer) as the row-chunked layout} if 
 \begin{equation}
@@ -345,7 +346,7 @@ In general, this requires some numerical analysis to account for the discrete na
 We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $s \ge \max\{m\sqrt{n}, n\sqrt{m}\}$.
 Once the smallest $s$ is obtained, the largest $p$ and $q$ are easily determined.
 
-%%% OVEmVIEW:
+%%% OVERVIEW:
 % 3 and 4 require that pq >= n and pq >= m
 % 1 and 2 require that s >= np and s >= mq
 
@@ -353,8 +354,8 @@ Once the smallest $s$ is obtained, the largest $p$ and $q$ are easily determined
 % This means that we need pq >= m and s >= mq.
 % The smallest value of s occurs at the smallest value of q (as m is constant).
 % The smallest value of q is either np/m or m/p. 
-% If m/p >= np/m, we get p <= m/n^0.5, which means that q >= n^0.5.
-% If m/p <= np/m, we get p >= m/n^0.5, which means that q >= n^0.5.
+% If m/p >= np/m, then the smallest allowable value of q is m/p. The inequality yields p <= m/n^0.5, which means that q >= n^0.5.
+% If m/p <= np/m, then the smallest allowable value of q is np/m. The inequality yields p >= m/n^0.5, which means that q >= n^0.5.
 % Either way, this means that the smallest value of s is mn^0.5.
 
 % Now assume that m <= n and mq >= np.
@@ -367,7 +368,7 @@ Once the smallest $s$ is obtained, the largest $p$ and $q$ are easily determined
 % By symmetry, we would get these two options if we swapped m <=> n and p <=> q.
 
 \subsection{Worked example of choosing chunk settings}
-Say that we have a matrix with 20000 rows and 50000 columns.
+\revised{Assume} that we have a matrix with 20000 rows and 50000 columns.
 Our approach suggests that we should choose $s$ as being greater than $50000\sqrt{20000} \approx 7071068$ for optimal access.
 We set $s=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB for double-precision values.
 Our chunk dimensions are $p = s/50000 = 160$ and $q = s/20000 = 400$.
@@ -375,20 +376,20 @@ In practice, one may wish to cap the cache size at the cost of some performance,
 
 \textit{beachmat} provides functions to perform the above calculations given $m$ and $n$.
 However, \textit{beachmat} will not automatically use the computed $p$ and $q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
-This is because the optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
-The choice of $p$ and $q$ above is only optimized for consecutive row and column accesses, while the actual access pattern might be random (see Section~\ref{sec:random}).
-Thus, the chunk dimensions must be manually chosen by the user/developer.
+The optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
+The choice of $p$ and $q$ above is only \revised{well-suited} for consecutive row and column accesses, while the actual access pattern might be random (see \revised{Supplementary} Section~\ref{sec:random}).
+Thus, the chunk dimensions must be explicitly chosen by the user/developer.
 Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
 
 \subsection{Testing different layouts with simulated data}
-We demonstrate the effect of the choice of file layout on access to HDF5-backed data.
-For column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
-The contiguous layout is the fastest as \revised{all relevant data can be obtained in one read from file} per column \revised{(Figure~3a)}.
+\revised{Here,} we demonstrate the effect of the \revised{HDF5 file layout on data access speed}.
+For \revised{consecutive} column access, we consider the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
+The contiguous layout is fastest as \revised{all relevant data can be obtained in one read from file} per column \revised{(Figure~3a)}.
 Column-wise chunking also involves a single \revised{chunk} read per column, but is slower due to the overhead of decompression and chunk caching.
 Rectangular chunking is slightly slower than column-wise chunks, despite the optimized size of the cache -- this is attributable to the time spent collecting data across multiple cached chunks.
 As expected, row-wise chunks is the slowest as each column access effectively processes data from the entire matrix.
 
-The timing results are reversed for row access, where row-wise chunking is the layout that provides the best performance with \beachmat{} \revised{(Figure~3b)}.
+Timings are reversed for \revised{consecutive} row access, where row-wise chunking is the layout that provides the best performance with \beachmat{} \revised{(Figure~3b)}.
 This is expected as only one \revised{chunk} read is required per row, compared to multiple reads with column-wise chunking \revised{or a contiguous layout}.
 Rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
 This highlights the utility of rectangular chunks for both row and column accesses \revised{with \beachmat{}},
@@ -470,7 +471,7 @@ using the \code{rsvd} function in the \textit{BigDataAlgorithms} package (\url{h
 This provides a \code{HDF5Matrix}-compatible version of the randomized SVD implementation in the \textit{rsvd} package (\url{https://cran.r-project.org/package=rsvd}).
 Specifically, we mean-centered the expression matrix and filtered for HVGs before applying \code{rsvd} with a rank of 50.
 Coordinates in the PC space for each cell were manually computed from the U and D matrices, and the percentage of variance explained was computed from the diagonal elements of D.
-Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} or C++ are not used.
+Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} \revised{and} C++ \revised{were} not used.
 
 \subsection{Details of the computing environment}
 \label{sec:systemdetails}
