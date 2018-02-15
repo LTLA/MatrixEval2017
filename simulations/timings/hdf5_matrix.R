@@ -1,9 +1,15 @@
 # Simulating row and column access with a base matrix.
 
 library(beachtime)
+
 tmp.dir <- "tmp-hdf5"
+if (file.exists(tmp.dir)) {
+    unlink(tmp.dir, recursive=TRUE)
+}
 dir.create(tmp.dir)
+
 library(HDF5Array)
+options(DelayedArray.block.size=2e9) # for faster data saving with writeHDF5Array.
 
 makeContiguous <- function(data, file, name) {
     # Rewriting this function, as h5createDataset2 automatically sets the chunk dimensions to 'dim'.
@@ -55,7 +61,7 @@ for (ncells in c(1000, 2000, 5000, 10000)) {
 ncells <- 1000
 overwrite <- TRUE
 for (ngenes in c(10000, 20000, 50000, 100000)) {
-    fpath <- file.path(tmp.dir, c("rowcomp.h5", "rect.h5"))
+    fpaths <- file.path(tmp.dir, c("rowcomp.h5", "rect.h5"))
 
     hdf5.row.time <- hdf5.rect.time <- def.time <- numeric(10)
     for (it in seq_len(10)) {         
