@@ -140,25 +140,25 @@ As the density increases, column access becomes slower but is still comparable t
 
 \revised{As explained above for ordinary matrices, \beachmat{} defaults to copy-on-access to retrieve column data from sparse matrices.
 This is the case regardless of whether \code{get\_col()} or \code{get\_const\_col()} is used, as both must explicitly return the zero entries for representation-agnostic behaviour.
-To improve performance, the \beachmat{} API instead provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
+To improve performance, the \beachmat{} API also provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
 This returns a tuple containing the number of matrix elements stored in the representation, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
 For CSC matrices, iterators can be directly returned to the internal $i$ and $x$ vectors.
 For other representations, this method dispatches to \code{get\_const\_col()}, which also avoids copying for ordinary matrices while providing representation-agnostic behaviour.}
 
 \revised{Without copying, \beachmat{} is over an order of magnitude faster than the default method for column-level access (Supplementary Figure~\ref{fig:sparsecol}).
 It is also slightly faster than column access through} the \textit{RcppArmadillo} \revised{and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}, which can handle sparse matrices through the \code{sp\_mat} and \code{MappedSparseMatrix} classes, respectively}.
-\revised{We note that part of \beachmat{}'s speed-up is due by the fact that the zero entries of the sparse matrix are completely ignored.
+\revised{We note that part of \beachmat{}'s speed-up is caused by the fact that the zero entries of the sparse matrix are completely ignored.
 Whether or not this is desirable depends on the algorithm being implemented.
-Indeed, it is possible to use one algorithm for sparse matrices and another for dense matrices, though we only recommend doing so for performance-critical parts of an application.
-Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.}
+Indeed, it is possible to use one algorithm for sparse matrices and another for dense matrices, though we only recommend doing so for performance-critical parts of an application.}
+Writing, testing and maintaining two different versions of the same code doubles the burden on the developer, which is precisely what \beachmat{} was intended to avoid.
 
 \subsubsection{\revised{Timings for row access}}
 Row-level access is more difficult in the CSC format as entries in the same row do not follow a predictable pattern.
 If a row is requested, a binary search needs to be performed on the values of $i$ in $G_j$ for each column $j$, which requires an average time proportional to $\log(m)$.
 In contrast, obtaining the next element in a row of an ordinary matrix can be done in constant time by jumping $m$ elements ahead on the one-dimensional array.
 To speed up row access for sparse matrices, we realized that the most common access pattern involves requests for consecutive rows.
-If row $i$ is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than $i$.
-When $i+1$ is requested, we simply need to check if each of the indices should be incremented by one.
+If row \revised{$i^*$} is accessed, \beachmat{} will loop over all columns and cache the index of the first value of $i$ in $G_j$ that is not less than \revised{$i^*$}.
+When \revised{$i^*+1$} is requested, we simply need to check if each \revised{index} should be incremented by one.
 Caching avoids the need for a new binary search and reduces the row access time substantially (Figure~2).
 
 % We don't use CSR format because dgRMatrix objects are not supported much by Matrix.
@@ -168,7 +168,7 @@ Caching avoids the need for a new binary search and reduces the row access time 
 \revised{For non-consecutive row access}, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search \revised{for the requested row}; if less, we use the indices to set the end of the search. 
 This reduces the search space and the amount of computational work for large $m$\revised{, yielding in an approximate 2-fold increase in speed when the non-consecutive rows are ordered (Supplementary Figure~\ref{fig:sparserowrandom}a).
-Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly better at large $m$.}
+Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly faster at large $m$.}
 
 Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with \revised{ordinary matrices (Figure~2a)}.
 This is not surprising as there is less work to do when retrieving data from a simpler representation.
@@ -207,11 +207,11 @@ In practice, both row and column accesses are often required (e.g., to access ge
 The choice of file layout is the responsibility of the process that constructs the HDF5 file.
 This can be the original data provider; the developer whose function returns a \code{HDF5Matrix}; or a user who coerces their data into a \code{HDF5Matrix}.
 As such, the chunking scheme is generally outside of \beachmat{}'s control, preventing the API from automatically choosing the optimal layout for the requested access pattern.
-Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns (Additional Note~\ref{sec:layoutoptim}).
-\beachmat{} also provides a function to quickly convert an existing HDF5 file to a layout using pure row- or column-based chunks (Additional Note~\ref{sec:random}), which performs optimally for random row and column access, respectively.
+Nonetheless, for a given layout, \beachmat{} will dynamically resize the HDF5 chunk cache to speed up access to consecutive rows or columns (Supplementary Section~\ref{sec:layoutoptim}).
+\beachmat{} also provides a function to quickly convert an existing HDF5 file to a layout using pure row- or column-based chunks (Supplementary Section~\ref{sec:random}), which performs \revised{well} for random row and column access, respectively.
 
 Another benefit of chunking is that the data in each chunk can be compressed using algorithms such as ZLIB and SZIP.
-\revised{In our simulations, compression reduced} the size of the HDF5 file by 4-fold for dense matrices (80 MB to 19 MB for a 10000-by-1000 double-precision matrix), with even greater gains for sparse \revised{matrices} (9 MB for the same matrix with 1\% non-zero entries).
+\revised{In our simulations, the default compression scheme in the \textit{rhdf5} package reduced} the size of the HDF5 file by 4-fold for \revised{low-precision} dense matrices (80 MB to 19 MB for a 10000-by-1000 matrix \revised{containing real numbers with two significant figures}), with even greater gains for sparse \revised{matrices} (9 MB for the same matrix with 1\% non-zero entries).
 The use of smaller files reduces the risk that disk space will be exceeded during the course of an analysis.
 This is important when many \revised{\code{HDF5Matrix} objects} need to be constructed, e.g., to store transformed expression values.
 
