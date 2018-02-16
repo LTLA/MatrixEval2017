@@ -54,7 +54,7 @@ We have a look at the three relevant metrics.
 ```{r preprocess-qchist, fig.height=6, fig.width=12}
 par(mfrow=c(1,3))
 hist(sce$log10_total_counts, xlab=expression("Log"[10]~"library size"), col="grey80")
-hist(sce$log10_total_features, xlab=expression("Log"[10]~"number of genes expressed"), col="grey80")
+hist(sce$log10_total_features_by_counts, xlab=expression("Log"[10]~"number of genes expressed"), col="grey80")
 hist(sce$pct_counts_Mito, xlab="Percentage of mitochondrial reads", col="grey80", breaks=100)
 ```
 
