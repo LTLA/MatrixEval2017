@@ -15,25 +15,17 @@ sce <- readRDS("objects/sce.rds")
 
 ## Setting up genes and cells
 
-Here, we use the deconvolution method to compute size factors for each cell.
-We start by computing the average abundance of each gene.
-This is to filter out low-abundance genes, as having too many zeroes will overwhelm the method.
-Note that this only applies for normalization - this particular filter is not used in the rest of the analysis.
-
-```{r}
-keep <- rowData(sce)$AverageCount >= 0.1
-summary(keep)
-```
-
-We do some pre-clustering to split the cells into sensible clusters, to avoid violating the non-DE assumption and distorting the size factors.
+We first do some pre-clustering to split the cells into sensible clusters, to avoid violating the non-DE assumption and distorting the size factors.
 This is done by applying the `quickCluster` function on the cells in each library.
+We do some filtering for high-abundance genes to reduce the effect of zeroes on our rank-based clustering. 
 
 ```{r}
 by.lib <- split(seq_len(ncol(sce)), sce$Library)
 cluster.id <- character(ncol(sce))
 for (lib in names(by.lib)) { 
     current <- by.lib[[lib]]
-    ids <- quickCluster(sce[,current], subset.row=keep, method="igraph", 
+    cur.exprs <- realize(counts(sce)[,current]) # for speed; avoid multiple file reads here.
+    ids <- quickCluster(cur.exprs, min.mean=0.1, method="igraph", 
         max.size=3000, irlba.args=list(maxit=1000))
     cluster.id[current] <- paste0(lib, ".", ids)
 }
@@ -41,11 +33,11 @@ for (lib in names(by.lib)) {
 
 ## Calculating size factors
 
-We now compute a size factor for each cell using the specified parameters.
+We now compute a size factor for each cell using the deconvolution method with the specified parameters.
 
 ```{r}
 library(scran)
-sce <- computeSumFactors(sce, cluster=cluster.id, subset.row=keep, min.mean=NULL)
+sce <- computeSumFactors(sce, cluster=cluster.id, min.mean=0.1)
 summary(sizeFactors(sce))
 ```
 
@@ -58,11 +50,19 @@ plot(sce$total_counts, sizeFactors(sce), log="xy", xlab="Library size",
 
 ## Normalizing the expression values 
 
-We calculate normalized log-expression values and save this to a new `HDF5Matrix` object.
-This involves resetting the HDF5 dump file directory and location so that the output is retained.
+We reset the HDF5 dump file directory and location so that the normalized expression values are retained.
 
 ```{r}
-setHDF5DumpFile("objects/norm_exprs.h5")
+new.path <- "objects/norm_exprs.h5"
+if (file.exists(new.path)) {
+   unlink(new.path)
+}
+setHDF5DumpFile(new.path)
+```
+
+We then calculate normalized log-expression values and save this to a new `HDF5Matrix` object.
+
+```{r}
 sce <- normalize(sce)
 logcounts(sce)
 ```
