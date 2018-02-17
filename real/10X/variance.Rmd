@@ -10,21 +10,24 @@ library(scran)
 sce <- readRDS("objects/sce.rds")
 ```
 
-First, we set up the design matrix to block on the library of origin for each cell.
+## Fitting a trend to the endogenous variances
+
+First, we set up a blocking factor based on the library of origin for each cell.
 This ensures that we do not detect variance due to technical differences in sequencing.
 
 ```{r}
 lib.source <- factor(sce$Library)
-design <- model.matrix(~0 + lib.source)
+table(lib.source)
 ```
 
-We compute the variance of the normalized log-expression values while blocking on the library of origin, and we fit a trend to it.
-Some fiddling with the trend parameters is necessary to obtain an appropriate fit at high abundances.
+We compute the variance of the normalized log-expression values while blocking on the library of origin for each gene.
+We then fit a trend to the variances against the mean of the log-values.
+Some fiddling with the trend parameters is necessary to obtain an appropriate fit at high abundances where there is little support.
 
 ```{r}
 library(scran)
 fit <- trendVar(sce, method="loess", parametric=TRUE, 
-    design=design, use.spikes=FALSE, 
+    use.spikes=FALSE, block=lib.source,
     loess.args=list(span=0.05, control=loess.control(iterations=100)))
 ```
 
@@ -39,7 +42,7 @@ head(dec)
 
 We examine the mean-variance relationship and verify that the trend was fitted correctly.
 
-```{r hvgplot}
+```{r hvgplot-tech}
 plot(dec$mean, dec$total, pch=16, cex=0.5, xlab="Mean of log-expression", 
     ylab="Variance of log-expression")
 curve(fit$trend(x), add=TRUE, col="red")
@@ -48,13 +51,63 @@ curve(fit$trend(x), add=TRUE, col="red")
 Finally we save the results to file.
 
 ```{r}
-write.table(file="objects/hvg_output.txt", dec, sep="\t", quote=FALSE, row.names=FALSE)
+write.table(file="objects/hvg_output_endog.txt", dec, sep="\t", quote=FALSE, row.names=FALSE)
 ```
 
 <!--
 Also saving the trend.
 
 ```{r}
-saveRDS(file="objects/trendfit.rds", fit)
+saveRDS(file="objects/trendfit_endog.rds", fit)
 ```
 -->
+
+## Considering a trend for the Poisson noise
+
+An alternative approach is to generate the trend corresponding to Poisson noise.
+This can be achieved with the `makeTechTrend` function.
+Normally we could just supply the entire `SingleCellExperiment` object to it, but for interests of speed, we'll manually specify the means instead.
+
+```{r}
+means <- 2^seq(0.01, max(dec$mean), length.out=100) - 1
+pois.trend <- makeTechTrend(means, size.factors=sizeFactors(sce))
+```
+
+We replace our endogenous trend with this new trend and then decompose the biological and technical component for each gene.
+
+```{r}
+fit2 <- fit
+fit2$trend <- pois.trend
+dec2 <- decomposeVar(fit=fit2)
+dec2 <- cbind(rowData(sce)[,1:2], dec2)
+dec2 <- dec2[order(dec2$p.value, -dec2$bio),]
+head(dec2)
+```
+
+We see that this trend passes below the bulk of variances for endogenous genes.
+This is expected for UMI data where the technical noise is much lower and per-gene biological heterogeneity tends to more pronounced.
+
+```{r hvgplot-pois}
+plot(dec2$mean, dec2$total, pch=16, cex=0.5, xlab="Mean of log-expression", 
+    ylab="Variance of log-expression")
+curve(fit2$trend(x), add=TRUE, col="blue")
+```
+
+We save the results to file for further use.
+
+```{r}
+write.table(file="objects/hvg_output_pois.txt", dec2, sep="\t", quote=FALSE, row.names=FALSE)
+```
+
+This trend is probably more appropriate than the endogenous trend for distinguishing between biological and technical variation.
+The assumption that most genes are not highly variable is quite strong in a heterogeneous population.
+
+<!--
+Also saving the trend.
+
+```{r}
+saveRDS(file="objects/trendfit_pois.rds", fit2)
+```
+-->
+
+
