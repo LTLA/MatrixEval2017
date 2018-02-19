@@ -402,6 +402,9 @@ Reduced speed is probably due to the need to collect data across many cached chu
 Obviously, caching the entire matrix is not possible for the very large data sets that motivate the use of file-backed representations.
 For these, further degradation in performance can be expected when the API is forced to re-read chunks from file.}
 
+% I don't know why the rectangular layout gets faster for large matrices.
+% My guess is that the chunk size gets larger and larger for pure row/column-based chunks, and this interferes with the read buffer or something.
+
 \section{Dealing with random access from a \texttt{HDF5Matrix}}
 \label{sec:random}
 
@@ -456,7 +459,7 @@ We used the \code{calculateQCMetrics} function from \textit{scater} \cite{mccart
 including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
 Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median value for all cells in the same sequencing library, and were filtered out prior to further analyses.
 
-To call cell cycle phase, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
+To \revised{assign} cell cycle phase \revised{to each cell}, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
 This was performed over three cores to reduce computational time.
 To compute size factors, we used the the deconvolution method \cite{lun2016pooling}.
 We performed pre-clustering of cells within each sequencing library, using a shared-nearest-neighbour clustering approach \cite{xu2015identification} on the rank-based distances.
@@ -464,14 +467,12 @@ This yielded clusters containing 200-3000 cells each.
 Deconvolution was applied to each cluster using the \code{computeSumFactors} function, and size factors were calibrated across clusters by normalizing the cluster-specific pseudo-cells.
 This procedure avoids violating the non-DE assumption when pooling many different cell types.
 The size factor for each cell was used to compute normalized log-expression values \cite{lun2016stepbystep}, which were stored in a new \code{HDF5Matrix} object.
-Note that, when computing the size factors, we only used genes with an average count above 0.1 (as calculated by the \code{calcAverage} function in \textit{scater}).
-This ensures that the pooled expression profiles will not be dominated by zeros.
 
-To identify highly variable genes, we used the \code{trendVar} and \code{decomposeVar} functions from \textit{scran}.
+To identify highly variable genes \revised{(HVGs)}, we used the \code{trendVar} and \code{decomposeVar} functions from \textit{scran}.
 We computed the variance of the normalized log-expression values for each gene while blocking on the sequencing library of origin.
 We fitted a mean-dependent trend to the variances to model the mean-variance relationship, using a loess smoother with a span of 0.05 and 100 robustness iterations.
-Assuming most genes were not highly variable, we tested whether the residual from the trend for each gene was significantly greater than zero.
-After applying the Benjamini-Hochberg correction, highly variable genes were identified as those with a significantly non-zero component at a FDR of 5\%.
+\revised{We defined HVGs as those genes with observed variances above the fitted value of the trend at the same abundance.
+For comparison, we also constructed the mean-variance trend corresponding to Poisson noise, representing the technical variance of sequencing \cite{marioni2008rnaseq} or capture for the UMI counts.}
 
 We performed randomized PCA \cite{halko2011finding} on the expression matrix for all cells,
 using the \code{rsvd} function in the \textit{BigDataAlgorithms} package (\url{https://github.com/Bioconductor/BigDataAlgorithms}).
