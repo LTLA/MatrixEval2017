@@ -8,22 +8,22 @@ knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
 library(BiocStyle)
 library(SingleCellExperiment)
 sce <- readRDS("objects/sce.rds")
-dec <- read.table("objects/hvg_output.txt", stringsAsFactors=FALSE, header=TRUE)
+dec <- read.table("objects/hvg_output_endog.txt", stringsAsFactors=FALSE, header=TRUE)
 ```
 
-Taking the HVGs to define the biological subspace of interest.
+Defining HVGs as the genes with variances above the fitted trend, to define the biological subspace of interest.
 
 ```{r}
-sig <- dec$FDR <= 0.05 & !is.na(dec$FDR)
-summary(sig)
+above.endog <- dec$bio > 0
+summary(above.endog)
 ```
 
 Extracting the HVGs and mean-centering them.
 
 ```{r}
 exprs.mat <- logcounts(sce)
-exprs.mat <- exprs.mat[match(dec$Ensembl[sig], rowData(sce)$Ensembl), ]
-exprs.mat <- exprs.mat - dec$mean[sig]
+exprs.mat <- exprs.mat[match(dec$Ensembl[above.endog], rowData(sce)$Ensembl), ]
+exprs.mat <- exprs.mat - dec$mean[above.endog]
 ```
 
 Performing random PCA on the resulting expression matrix to retain the first 50 PCs.
@@ -32,7 +32,7 @@ Here we use the `r Githubpkg("Bioconductor/BigDataAlgorithms")` package that con
 ```{r}
 library(BigDataAlgorithms)
 set.seed(1000)
-options(DelayedArray.block.size=200e6)
+options(DelayedArray.block.size=3e8)
 svd.out <- rsvd(t(exprs.mat), k=50)
 pc.out <- sweep(svd.out$u, 2, svd.out$d, "*")
 ```
@@ -41,7 +41,7 @@ Having a look at the variance explained by the top 50 PCs.
 
 ```{r screeplot}
 var.exp <- svd.out$d^2/(ncol(exprs.mat)-1)
-total.var <- sum(dec$total[sig])
+total.var <- sum(dec$total[above.endog])
 plot(var.exp/total.var*100, xlab="PC number", ylab="% variance explained")
 ```
 
