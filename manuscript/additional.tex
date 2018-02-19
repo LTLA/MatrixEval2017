@@ -170,6 +170,12 @@ If greater, we use the stored indices to set the start of the binary search \rev
 This reduces the search space and the amount of computational work for large $m$\revised{, yielding in an approximate 2-fold increase in speed when the non-consecutive rows are ordered (Supplementary Figure~\ref{fig:sparserowrandom}a).
 Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly faster at large $m$.}
 
+\revised{The caching procedure increases memory usage slightly as the indices must be stored between row accesses.
+Specifically, one additional integer must be stored per column, equivalent to the storage of the start position of each $G_j$ group in the CSC format.
+Generally, the memory overhead of caching is negligible relative to the data stored in the matrix itself, provided that the density of non-zero entries and the number of rows is not very low relative to the number of columns.
+Nonetheless, \beachmat{} will minimize memory usage by not allocating memory for the cache until a row access is requested.
+This avoids unnecessary memory usage when only column accesses are requested from the API.}
+
 Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with \revised{ordinary matrices (Figure~2a)}.
 This is not surprising as there is less work to do when retrieving data from a simpler representation.
 The exception is with large matrices of low density \revised{(Figure~2b), probably because} the cost of retrieving non-contiguous blocks of \revised{RAM} from \revised{an ordinary} matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
