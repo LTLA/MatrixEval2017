@@ -12,6 +12,6 @@ Figure4.pdf: pics/figure_zeisel.tex ../real/zeisel/pics/zeisel_col.pdf ../real/z
 	cd pics; pdflatex `basename $<`
 	pdfcrop pics/figure_zeisel.pdf $@
 
-Figure5.pdf: pics/figure_10x.tex ../real/10X/pics/cycle.png ../real/10X/pics/sizefacs.png ../real/10X/pics/hvg.png ../real/10X/pics/pca.png
+Figure5.pdf: pics/figure_10x.tex ../real/10X/pics/cycle.pdf ../real/10X/pics/sizefacs.pdf ../real/10X/pics/hvg.pdf ../real/10X/pics/pca.pdf
 	cd pics; pdflatex `basename $<`
 	pdfcrop pics/figure_10x.pdf $@
