@@ -231,13 +231,13 @@ Mike L. Smith\textsuperscript{3}
 \end{flushleft}
 % Please keep the abstract below 300 words
 \section*{Abstract}
-\revised{Biological experiments involving genomics or other high-throughput assays typically yield a data matrix that can be explored and analyzed using the popular R programming language with packages from the Bioconductor project.
-Improvements in the throughput of these assays have resulted in an explosion of data that are generated from routine experiments, which poses a challenge to the existing computational infrastructure for statistical data analysis.
-In particular, large matrices holding expression values for each gene in each cell require sparse or file-backed representations for manipulation in R.
+\revised{Biological experiments involving genomics or other high-throughput assays typically yield a data matrix that can be explored and analyzed using the R programming language with packages from the Bioconductor project.
+Improvements in the throughput of these assays have resulted in an explosion of data even from routine experiments, which poses a challenge to the existing computational infrastructure for statistical data analysis.
+For example, single-cell RNA sequencing (scRNA-seq) experiments frequently generate large matrices containing expression values for each gene in each cell, requiring sparse or file-backed representations for memory-efficient manipulation in R.
 These alternative representations are not easily compatible with high-performance C++ code used for computationally intensive tasks in existing R/Bioconductor packages.
 Here, we describe a C++ interface named \beachmat{}, which enables agnostic data access from various matrix representations.
 This allows package developers to write efficient C++ code that is interoperable with dense, sparse and file-backed matrices, amongst others.
-We evaluated the performance of \beachmat{} on each matrix representation using both simulated and real single-cell RNA sequencing (scRNA-seq) data, and defined a clear memory/speed trade-off to motivate the choice of an appropriate representation.
+We evaluated the performance of \beachmat{} for accessing data from each matrix representation using both simulated and real scRNA-seq data, and defined a clear memory/speed trade-off to motivate the choice of an appropriate representation.
 We also demonstrate how beachmat can be incorporated into the code of other packages to drive analyses of a very large scRNA-seq data set.}
 
 \linenumbers
@@ -260,7 +260,7 @@ For each representation, methods are provided in R for common operations such as
 This simplifies software development and improves interoperability.
 
 \revised{The major benefit of alternative representations is that they allow efficient handling of large matrices in R without using large amounts of RAM to construct a dense array.
-This is particularly important for the analysis of current biological data sets due to the increasing throughput of the experiments.
+This is particularly important for the analysis of current biological data sets due to increasing experimental throughput.
 It is well known that the output of DNA sequencing machines has risen consistently over the past decade \cite{reuter2015high}, which is compounded by the increasing complexity of the assays.
 For example, droplet-based protocols in single-cell transcriptomics \cite{macosko2015highly,klein2015droplet,zheng2017massively} allow generation of transcriptome-wide expression profiles for each of thousands or even millions of cells.
 Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} yielding data for individual genomic regions or base positions, respectively.
@@ -272,8 +272,8 @@ Unfortunately, \revised{the use of alternative matrix representations is less st
 \revised{Existing interfaces for reading R matrices in C/C++ require the details of the matrix representation to be specified during compilation.}
 This makes it difficult to write a single, general piece of code that can be applied to many different representations.
 Writing multiple versions \revised{of a function} for different representations is difficult and unsustainable when more representations become available.
-The alternative is to perform all processing in R to exploit the availability of common methods.
-However, this is an unappealing option for high-performance code.
+\revised{The other option} is to perform all processing in R to exploit the availability of common methods.
+However, this is an unappealing \revised{strategy} for high-performance code.
 R is often slower than C++ by at least an order of magnitude for arbitrary programming tasks that cannot be ``vectorized'', i.e., made to operate on all elements of a vector at once.
 This includes common procedures in \revised{biological} data analysis such as looping across all \revised{samples} or genes and performing arbitrarily complex operations on the \revised{sample-} or gene-specific \revised{observations}.
 The use of R alone would increase the computational time required to perform analyses, which is inconvenient for interactive analyses and unacceptable for large simulation studies.
@@ -286,8 +286,8 @@ It would clearly be preferable to implement critical functions in native code wh
 Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each Matrix Type), which enables \revised{C++ code to} access R matrix data in a manner that is agnostic to the exact matrix representation.
 This allows \revised{package} developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes including \revised{ordinary} matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
 Using simulated and real \revised{genomics} data, we assess the performance of \beachmat{} for data access from each matrix representation.
-We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of different representations in different settings.
-We also demonstrate how \beachmat{} can be used by other Bioconductor packages to empower the analysis of a very large \revised{single-cell RNA sequencing (scRNA-seq)} data set. 
+We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of \revised{alternative} representations in different settings.
+We also demonstrate how \beachmat{} can be used by other Bioconductor packages to \revised{enable} the analysis of a very large \revised{single-cell RNA sequencing (scRNA-seq)} data set. 
 By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing \revised{high-throughput biological data stored in large matrices}.
 
 \section*{Design and implementation}
@@ -306,7 +306,7 @@ This pointer is the same regardless of the representation and can be used in dow
     \end{center}
     \caption{Schematic of the \beachmat{} workflow.
         Various matrix representations at the R level are passed as \code{RObject} instances to a C++ function.
-        \beachmat{} identifies the specific representation, constructs an instance of the appropriate C++ derived class, and returns a pointer to base class.
+        \beachmat{} identifies the specific representation, constructs an instance of the appropriate C++ derived class, and returns a pointer to the base class.
         (In this case, a \code{numeric\_matrix} pointer is returned for input matrices holding double-precision data.)
         This pointer can then be used in user-level code in a manner that is agnostic to the details of the original representation.
     }
@@ -449,7 +449,7 @@ Our custom C++ functions based on \beachmat{} were at least comparable to the bu
 For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
 (b) \revised{Time required to calculate the row sums for each representation by accessing data from each row.}
 For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
-Heights represent the average of 10 repeated timings; standard errors were negligible and not shown.
+Heights represent the average of 10 repeated timings; standard errors were negligible and are not shown.
 \revised{(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the relevant built-in methods in R.}}
     \label{fig:zeisel}
 \end{figure}
@@ -504,7 +504,7 @@ By taking advantage of the file-backed \code{HDF5Matrix}, this analysis can be c
 These features allow us to obtain biological insights that previously would have been inaccessible from R.
 We also note that the incorporation of the \beachmat{} API only required small modifications to existing C++ code for scRNA-seq data analysis.
 This indicates that many established methods in the R/Bioconductor ecosystem can be easily and immediately extended to work with large data sets,
-enabling the statistically rigorous analysis of big single-cell data.
+enabling the statistically rigorous analysis of \revised{large} single-cell data.
 
 \section*{Availability and future directions}
 The \beachmat{} package contains the C++ API and is available as part of version 3.6 of the Bioconductor project (\url{https://bioconductor.org/packages/beachmat}).
@@ -519,7 +519,7 @@ We anticipate that \beachmat{} will be useful to developers of novel computation
 While we have focused on scRNA-seq in this paper, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
 We will also continue to develop \beachmat{} to support data access from new formats such as Loom for scRNA-seq data (\url{http://loompy.org/}).
 
-We note that, for big single-cell data, the utility of \beachmat{} for R package development ultimately depends on the scalability of the underlying algorithms for processing millions or even billions of cells.
+We note that, for \revised{large} single-cell data, the utility of \beachmat{} for R package development ultimately depends on the scalability of the underlying algorithms for processing millions or even billions of cells.
 Most existing methods for scRNA-seq data analysis are designed to handle thousands of cells at best.
 Fortunately, we can make use of the existing expertise in the Bioconductor community to improve scalability.
 Highly multiplexed flow and mass cytometry experiments routinely generate low-dimensional data for millions of cells,
