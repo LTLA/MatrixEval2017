@@ -87,7 +87,7 @@ In all cases, standard errors were negligible and not plotted.
 
 \revised{It is worth noting that all of these timings were performed on a single computer (see Section~\ref{sec:systemdetails} for details). 
 In practice, the magnitude of differences in access speed between representations depends on many factors such as the amount of microprocessor cache memory, speed of reading data from files on different storage media, etc.
-These factors will not be considered here for simplicity.}
+These factors are not considered here for simplicity.}
 
 \subsection{Performance with ordinary matrices}
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
@@ -112,7 +112,7 @@ Copying is also required for operations that involve transformations and/or re-o
 
 Nonetheless, for read-only access to column data, developers can direct \beachmat{} to return an iterator directly to the start of the column \revised{of an ordinary matrix}.
 This \revised{\code{get\_const\_col()} method} avoids copying and \revised{yields performance equivalent to \textit{Rcpp} (Supplementary Figure~\ref{fig:basetime}a).
-For other matrix representations, the same method will simply dispatch to the default copy-on-access function \code{get\_col()}.
+For other matrix representations, the same method will simply use the default copy-on-access function \code{get\_col()}.
 This means that read-only column access can be performed with \code{get\_const\_col()} regardless of the representation, while taking advantage of the structure of ordinary matrices for greater efficiency.}
 
 \subsection{Performance with sparse matrices}
@@ -127,7 +127,7 @@ The representation is further compressed by discarding $j$ from each triplet.
 All entries from the same column lie at consecutive locations of the ordered sequence, so only the start position of $G_j$ on the sequence needs to be stored for each column.
 (The end position of one column is simply the start position of the next column.)
 This reduces \revised{RAM} usage to $s_In + (s_I + s_D) N_{\ne 0}$ where $s_I$ is the size of an integer, $s_D$ is the size of a single data element and $N_{\ne 0}$ is the number of non-zero elements in the matrix.
-For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their \revised{ordinary} counterparts if the density of non-zero elements is less than $\approx66$\% (assuming 4-byte integers and 8-byte doubles). 
+For double-precision matrices with many rows, sparse matrices will be more memory-efficient than their \revised{ordinary} counterparts if the density of non-zero elements is less than $\sim 66$\% (assuming 4-byte integers and 8-byte doubles). 
 
 % Drops down to 33% for integer matrices, as Matrix needs to convert them to double-precision.
 
@@ -143,7 +143,7 @@ This is the case regardless of whether \code{get\_col()} or \code{get\_const\_co
 To improve performance, the \beachmat{} API also provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
 This returns a tuple containing the number of matrix elements stored in the representation, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
 For CSC matrices, iterators can be directly returned to the internal $i$ and $x$ vectors.
-For other representations, this method dispatches to \code{get\_const\_col()}, which also avoids copying for ordinary matrices while providing representation-agnostic behaviour.}
+For other representations, this method calls \code{get\_const\_col()}, which also avoids copying for ordinary matrices while providing representation-agnostic behaviour.}
 
 \revised{Without copying, \beachmat{} is over an order of magnitude faster than the default method for column-level access (Supplementary Figure~\ref{fig:sparsecol}).
 It is also slightly faster than column access through} the \textit{RcppArmadillo} \revised{and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}, which can handle sparse matrices through the \code{sp\_mat} and \code{MappedSparseMatrix} classes, respectively}.
@@ -167,8 +167,8 @@ Caching avoids the need for a new binary search and reduces the row access time 
 
 \revised{For non-consecutive row access}, we mitigate the time penalty by checking if the requested row is greater than or less than the previous row for which indices are stored.
 If greater, we use the stored indices to set the start of the binary search \revised{for the requested row}; if less, we use the indices to set the end of the search. 
-This reduces the search space and the amount of computational work for large $m$\revised{, yielding in an approximate 2-fold increase in speed when the non-consecutive rows are ordered (Supplementary Figure~\ref{fig:sparserowrandom}a).
-Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly faster at large $m$.}
+This reduces the search space and the amount of computational work for large $m$\revised{, yielding an approximate 2-fold increase in speed when the non-consecutive rows are ordered (Supplementary Figure~\ref{fig:sparserowrandom}a).
+Our caching scheme also performs no worse than a naive binary search for random row access (Supplementary Figure~\ref{fig:sparserowrandom}b), and in fact is slightly faster for large $m$.}
 
 \revised{The caching procedure increases memory usage slightly as the indices must be stored between row accesses.
 Specifically, one additional integer must be stored per column, equivalent to the storage of the start position of each $G_j$ group in the CSC format.
@@ -184,7 +184,7 @@ For a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} takes 3
 These results motivate the use of \beachmat{} for general data access from sparse matrices \revised{in C++ code}.
 
 \subsection{Performance with HDF5-based matrices}
-For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvious option is to store the \revised{the data in a file} and load submatrices into memory as required.
+For large, non-sparse matrices that do not fit into \revised{RAM}, the most obvious option is to store \revised{the data in a file} and load submatrices into memory as required.
 We consider the use of the hierarchical data format (HDF5) \cite{hdf5}, which provides flexible and efficient storage of and access to large amounts of data in a filesystem-like format.
 Each large matrix is stored as a data set in a HDF5 file, while in R, it is represented by a \code{HDF5Matrix} object from the \textit{HDF5Array} package.
 This object has a very small memory footprint -- fewer than 3 kilobytes in size -- and simply extracts data from the HDF5 file upon request.
