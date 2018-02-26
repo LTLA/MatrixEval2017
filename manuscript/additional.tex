@@ -484,8 +484,11 @@ We performed randomized PCA \cite{halko2011finding} on the expression matrix for
 using the \code{rsvd} function in the \textit{BigDataAlgorithms} package (\url{https://github.com/Bioconductor/BigDataAlgorithms}).
 This provides a \code{HDF5Matrix}-compatible version of the randomized SVD implementation in the \textit{rsvd} package (\url{https://cran.r-project.org/package=rsvd}).
 Specifically, we mean-centered the expression matrix and filtered for HVGs before applying \code{rsvd} with a rank of 50.
-Coordinates in the PC space for each cell were manually computed from the U and D matrices, and the percentage of variance explained was computed from the diagonal elements of D.
+Coordinates in the PC space for each cell were computed from the U and D matrices, and the percentage of variance explained was computed from the diagonal elements of D.
 Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} \revised{and} C++ \revised{were} not used.
+\revised{We chose to use randomized PCA due to its speed -- on a server with 1 TB of RAM,
+randomized PCA required only 2.2 hours to compute the first 50 dimensions for an ordinary matrix containing 10\% of the data set.
+By comparison, PCA based on the standard SVD failed to complete on this subset after 310 hours.}
 
 \subsection{Details of the computing environment}
 \label{sec:systemdetails}
