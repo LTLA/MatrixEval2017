@@ -1,4 +1,7 @@
-all: Figure2.pdf Figure3.pdf Figure4.pdf Figure5.pdf
+all: Figure1.pdf Figure2.pdf Figure3.pdf Figure4.pdf Figure5.pdf
+
+Figure1.pdf: pics/overview.svg
+	inkscape -D -A $@ $<
 
 Figure2.pdf: pics/figure_sparse_times.tex ../simulations/timings/pics/sparse_row_density.pdf ../simulations/timings/pics/sparse_row_nrow.pdf
 	cd pics; pdflatex `basename $<`
