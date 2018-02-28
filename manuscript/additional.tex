@@ -433,13 +433,16 @@ The idea is to read and write entire chunks as much as possible, reducing the nu
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
 Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).
-The time scales linearly with matrix size, so for a large data set with a million cells, it would take 2-3 hours.
+The \revised{computational} time scales linearly with matrix size, so for a large \revised{scRNA-seq} data set with a million cells, \revised{we estimate that the conversion} would take 2-3 hours.
 This is minor compared to the time spent by the entire analysis.
-Nonetheless, to maximize efficiency, all functions requiring column-based access (e.g., cell quality control and normalization) should be grouped together and executed first; 
+Nonetheless, to maximize efficiency, all functions requiring column-based access (e.g., cell\revised{-based} quality control and normalization) should be grouped together and executed first; 
 this should be followed by a layout conversion step, and then by execution of functions requiring row-based access, e.g., gene-based processing.
-An alternative option \revised{is} to store \revised{each matrix} in both row- and column-chunked form as two separate HDF5 data sets, which \revised{allows efficient access by both row and column simultaneously.}
-\revised{However}, it is difficult to ensure that both versions are synchronised throughout an interactive analysis.
-Transformations applied to one data set must be applied to the other, which introduces considerable overhead as operations and \revised{file} accesses must be performed twice.
+
+An alternative \revised{strategy is} to store \revised{a matrix} in both row- and column-chunked form as two separate HDF5 data sets in the same file.
+\revised{Ideally, both layouts would be referenced by a single R object, allowing the user to perform efficient random access to rows and columns simultaneously.
+It would be similarly straightfoward for \beachmat{} to choose the most appropriate layout for data access, depending on whether a row or column is requested.
+Obviously, though, this approach involves writing and storing an additional data set, doubling the size of the HDF5 file and slowing the creation of the matrix representation.
+We suggest that the use of two layouts is most suitable for analyses involving a read-only matrix that is written to file beforehand, subsequently providing rapid access to its data while avoiding issues with slower creation of larger files throughout the course of the analysis.}
 
 \section{Methods for real data processing}
 
