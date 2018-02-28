@@ -460,10 +460,10 @@ Note that this differs from the timings of the column sums above, which uses the
 \subsection{Analysis of the 1.3 million brain cell data set}
 We obtained the 1.3 million brain cell data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons})
 and converted it into a \code{HDF5Matrix} object with rectangular chunks using the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}).
-We wrapped this object in the \textit{TENxBrainData} package (\url{https://github.com/LTLA/TENxBrainData}) to provide convenient access to other R users.
+We wrapped this object in the \textit{TENxBrainData} package (\revised{\url{https://bioconductor.org/packages/TENxBrainData}}) \revised{for} convenient access \revised{during analysis}. 
 We used the \code{calculateQCMetrics} function from \textit{scater} \cite{mccarthy2017scater} to compute quality control metrics for each cell,
 including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
-Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median value for all cells in the same sequencing library, and were filtered out prior to further analyses.
+Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median for all cells in the same sequencing library, and were filtered out prior to further analyses.
 
 To \revised{assign} cell cycle phase \revised{to each cell}, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
 This was performed over three cores to reduce computational time.

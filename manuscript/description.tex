@@ -285,7 +285,7 @@ It would clearly be preferable to implement critical functions in native code wh
 
 Here, we describe a C++ API named \beachmat{} (using Bioconductor to handle Each Matrix Type), which enables \revised{C++ code to} access R matrix data in a manner that is agnostic to the exact matrix representation.
 This allows \revised{package} developers to implement computationally intensive algorithms in C++ that can be immediately applied to a wide range of R matrix classes including \revised{ordinary} matrices, sparse matrices from the \textit{Matrix} package, and HDF5-backed matrices from the \textit{HDF5Array} package.
-Using simulated and real \revised{genomics} data, we assess the performance of \beachmat{} for data access from each matrix representation.
+Using simulated and real \revised{transcriptomics} data, we assess the performance of \beachmat{} for data access from each matrix representation.
 We show that each representation has specific strengths and weaknesses, with a clear memory-speed trade-off that motivates the use of \revised{alternative} representations in different settings.
 We also demonstrate how \beachmat{} can be used by other Bioconductor packages to \revised{enable} the analysis of a very large \revised{single-cell RNA sequencing (scRNA-seq)} data set. 
 By operating synergistically with existing Bioconductor infrastructure, \beachmat{} extends R's capabilities for analyzing \revised{high-throughput biological data stored in large matrices}.
@@ -436,7 +436,7 @@ We converted the Zeisel \textit{et al.} data to the various matrix representatio
 We observed similar results to those obtained with simulated data, recapitulating the different trade-offs between \revised{access} speed and \revised{RAM} usage across representations.
 Specifically, row and column accesses from \revised{an ordinary} matrix were fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}a, b).
 HDF5-backed matrices provided slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for \revised{ordinary} matrices and 130 MB for sparse matrices).
-The size of the HDF5 file was also relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
+The size of the HDF5 file was relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
 \revised{We also recorded the time required to compute some gene- or cell-specific metrics (Figure~\ref{fig:zeisel}c, Supplementary Section~\suppsecrealzeisel{}) commonly used in scRNA-seq data analysis.
 Our custom C++ functions based on \beachmat{} were at least comparable to the built-in R functions, and were faster in some cases by avoiding a type conversion to a logical matrix.}
 
@@ -482,7 +482,7 @@ This is consistent with composition effects \cite{robinson2010scaling} caused by
         (b) Size factor for each cell from the deconvolution method, plotted against the library size.
         Cells were coloured according to the deviation from the median log-ratio of the size factor to the library size for all cells.
         (c) Variance of the normalized log-expression values for each gene, plotted against the mean log-expression.
-        The red line indicates the mean-dependent trend fitted to all genes, \revised{while the blue line represents the mean-variance trend corresponding to Poisson noise.}
+        The red line \revised{represents} the mean-dependent trend fitted to all genes, \revised{while the blue line represents the mean-variance trend corresponding to Poisson noise.}
         Orange points represent HVGs with variances above the red line, with the top 10 genes highlighted.
         (d) PCA plot generated from the HVG expression profiles of all cells.
         The variance explained by each of the first two principal components is shown in brackets.
@@ -535,7 +535,7 @@ HP adapted the \textit{HDF5Array} and \textit{DelayedArray} packages to interfac
 MLS ported the HDF5 C++ API into \textit{Rhdf5lib}, to support HDF5 read/write access in \beachmat{}.
 
 \section*{Acknowledgements}
-We thank Martin Morgan, Andrew McDavid, Peter Hickey, Raphael Gottardo, Mike Jiang, Vince Carey, John Readey and other members of the Bioconductor single-cell big data working group for useful discussions.
+We thank Martin Morgan, Andrew McDavid, Peter Hickey, Raphael Gottardo, Mike Jiang, Vince Carey, \revised{Kasper Hansen}, John Readey and other members of the Bioconductor single-cell big data working group for useful discussions.
 We thank Davis McCarthy for his assistance with incorporating \beachmat{} into \textit{scater}.
 We also thank John Marioni for helpful comments on the manuscript.
 
