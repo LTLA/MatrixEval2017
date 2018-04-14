@@ -90,6 +90,6 @@ main.pdf: description.tex
 	bibtex `echo $< | sed "s/\\.tex//"`
 	pdflatex $<
 	pdflatex $<
-	echo "X <- readLines('description.tex'); chosen <- grep('bibliography.ref.', X); Y <- c(X[seq_len(chosen-1)], readLines('description.bbl'), X[seq(chosen+1, length(X))]); writeLines(Y, con='main.tex')" | R --slave
+	echo "X <- as.list(readLines('description.tex')); bib.loc <- grep('bibliography.ref.', X); supp.loc <- grep('input.supp_refs.tex.', X); X[[bib.loc]] <- readLines('description.bbl'); X[[supp.loc]] <- readLines('supp_refs.tex'); writeLines(unlist(X), con='main.tex')" | R --slave
 	pdflatex main.tex
 	pdflatex main.tex
