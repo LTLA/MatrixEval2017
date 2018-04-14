@@ -43,8 +43,8 @@ These factors are not considered here for simplicity.
 By default, R stores matrices as one-dimensional arrays of length $mn$, where $m$ and $n$ are the number of rows and columns, respectively.
 This is done in column-major format, i.e., the matrix entry $(i, j)$ corresponds to array element $i + mj$ (assuming zero-based indexing).
 We refer to this format as an ordinary R matrix.
-The ordinary matrix is easy to manipulate and the time required to access all of its data elements is linear with respect to the number of rows/columns (\suppfigsimpleaccess{}).
-However, fast access comes at the cost of random access memory (RAM) usage that is directly proportional to the length of the one-dimensional array.
+The ordinary matrix is easy to manipulate and provides rapid access to row/column data.
+However, this comes at the cost of random access memory (RAM) usage that is directly proportional to the length of the one-dimensional array.
 For example, a double-precision matrix containing scRNA-seq data for 10000 genes in each of one million cells would require 80 GB of RAM.
 This is currently not possible for most workstations, instead requiring dedicated high-performance computing resources.
 Even smaller matrices will cause problems on systems with limited memory due to R's copy-on-write semantics.

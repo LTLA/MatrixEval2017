@@ -42,6 +42,6 @@ An alternative strategy is to store a matrix in both row- and column-chunked for
 Ideally, both layouts would be referenced by a single R object, allowing the user to perform efficient random access to rows and columns simultaneously.
 It would be similarly straightfoward for \beachmat{} to choose the most appropriate layout for data access, depending on whether a row or column is requested.
 Obviously, though, this approach involves writing and storing an additional data set, doubling the size of the HDF5 file and slowing the creation of the matrix representation.
-We suggest that the use of two layouts is most suitable for analyses involving a read-only matrix that is written to file beforehand, subsequently providing rapid access to its data while avoiding issues with slower creation of larger files throughout the course of the analysis.
+The simultaneous use of two layouts seems to be most suitable for analyses involving a read-only matrix that is written to file beforehand, subsequently providing rapid access to its data while avoiding issues with slower creation of larger files throughout the course of the analysis.
 
 \end{document}
