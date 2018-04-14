@@ -60,30 +60,26 @@ S7_Fig.pdf: pics/supp_hdf5_rechunk.tex
 S8_Fig.pdf: ../simulations/timings/pics/mat_mult.pdf
 	pdfcrop $< $@
 
-S1_Text.pdf: S1_text.tex
+S1_Text.pdf: S1_Text.tex
 	pdflatex $<
 	bibtex `echo $< | sed "s/\\.tex//"`
 	pdflatex $<
 	pdflatex $<
-	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
 
-S2_Text.pdf: S2_text.tex
+S2_Text.pdf: S2_Text.tex
 	pdflatex $<
 	bibtex `echo $< | sed "s/\\.tex//"`
 	pdflatex $<
 	pdflatex $<
-	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
 
-S3_Text.pdf: S3_text.tex
+S3_Text.pdf: S3_Text.tex
 	pdflatex $<
-	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
 
-S4_Text.pdf: S4_text.tex
+S4_Text.pdf: S4_Text.tex
 	pdflatex $<
 	bibtex `echo $< | sed "s/\\.tex//"`
 	pdflatex $<
 	pdflatex $<
-	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
 
 main.pdf: description.tex
 	pdflatex $<
