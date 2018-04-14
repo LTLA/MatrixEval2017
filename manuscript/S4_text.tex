@@ -1,0 +1,75 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[margin=3cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\beachmat}{\textit{beachmat}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{S4 Text: methods for real data processing}
+\author{Aaron T. L. Lun, Herv\'e Pag\`es, Mike L. Smith}
+
+\begin{document}
+
+\maketitle
+
+\section{Access timings with the Zeisel \textit{et al.} brain data set}
+Mouse brain scRNA-seq data \cite{zeisel2015brain} were obtained as a count matrix from \url{http://linnarssonlab.org/cortex}.
+Counts were read into R and converted into a double-precision simple matrix, a \code{dgCMatrix} or a \code{HDF5Matrix}.
+For each representation, timings of the calculation of row or column sums were performed as previously described.
+This was repeated 10 times to obtain an average time.
+Column- and row-wise chunking were used for timing column and row access, respectively, of a \code{HDF5Matrix}.
+
+We also timed the calculation of other metrics such as the number of detected genes per cell and the number of expressing cells per gene.
+This was achieved by writing custom C++ functions based on \beachmat{} using no-copy column access methods, i.e., \code{get\_const\_col\_indexed()}.
+For each metric, we recorded the time required as previously described, and compared to implementations written in R using \code{rowSums} or \code{colSums} after coercion to a logical matrix.
+We used the base \code{rowSums}/\code{colSums} methods for simple matrices, methods in \textit{Matrix} for sparse matrices, and methods in \textit{DelayedMatrixStats} (\url{https://bioconductor.org/packages/DelayedMatrixStats}) for HDF5-backed matrices.
+We repeated the timings for the library size for each cell with \beachmat{} or R's \code{colSums}.
+Note that this differs from the timings of the column sums above, which uses the default copy-on-access methods.
+
+\section{Analysis of the 1.3 million brain cell data set}
+We obtained the 1.3 million brain cell data set from the 10X Genomics website (\url{https://support.10xgenomics.com/single-cell-gene-expression/datasets/1.3.0/1M_neurons})
+and converted it into a \code{HDF5Matrix} object with rectangular chunks using the \textit{TENxGenomics} package (\url{https://github.com/mtmorgan/TENxGenomics}).
+We wrapped this object in the \textit{TENxBrainData} package (\url{https://bioconductor.org/packages/TENxBrainData}) for convenient access during analysis. 
+We used the \code{calculateQCMetrics} function from \textit{scater} \cite{mccarthy2017scater} to compute quality control metrics for each cell,
+including the total number of unique molecular identifiers (UMIs) and the total number of expressed genes (i.e., with at least one UMI).
+Low-quality cells were identified as those with log-total UMI counts or log-numbers of expressed genes that were more than three median absolute deviations below the median for all cells in the same sequencing library, and were filtered out prior to further analyses.
+
+To assign cell cycle phase to each cell, we applied the \code{cyclone} method \cite{scialdone2015computational} from the \textit{scran} package using the pre-defined mouse classifier.
+This was performed over three cores to reduce computational time.
+To compute size factors, we used the the deconvolution method \cite{lun2016pooling}.
+We performed pre-clustering of cells within each sequencing library, using a shared-nearest-neighbour clustering approach \cite{xu2015identification} on the rank-based distances.
+This yielded clusters containing 200-3000 cells each.
+Deconvolution was applied to each cluster using the \code{computeSumFactors} function, and size factors were calibrated across clusters by normalizing the cluster-specific pseudo-cells.
+This procedure avoids violating the non-DE assumption when pooling many different cell types.
+The size factor for each cell was used to compute normalized log-expression values \cite{lun2016stepbystep}, which were stored in a new \code{HDF5Matrix} object.
+
+To identify highly variable genes (HVGs), we used the \code{trendVar} and \code{decomposeVar} functions from \textit{scran}.
+We computed the variance of the normalized log-expression values for each gene while blocking on the sequencing library of origin.
+We fitted a mean-dependent trend to the variances to model the mean-variance relationship, using a loess smoother with a span of 0.05 and 100 robustness iterations.
+We defined HVGs as those genes with observed variances above the fitted value of the trend at the same abundance.
+For comparison, we also constructed the mean-variance trend corresponding to Poisson noise, representing the technical variance of sequencing \cite{marioni2008rnaseq} or capture for the UMI counts.
+
+We performed randomized PCA \cite{halko2011finding} on the expression matrix for all cells,
+using the \code{rsvd} function in the \textit{BigDataAlgorithms} package (\url{https://github.com/Bioconductor/BigDataAlgorithms}).
+This provides a \code{HDF5Matrix}-compatible version of the randomized SVD implementation in the \textit{rsvd} package (\url{https://cran.r-project.org/package=rsvd}).
+Specifically, we mean-centered the expression matrix and filtered for HVGs before applying \code{rsvd} with a rank of 50.
+Coordinates in the PC space for each cell were computed from the U and D matrices, and the percentage of variance explained was computed from the diagonal elements of D.
+Note that this function relies on a block processing strategy to matrix multiply \code{HDF5Matrix} objects -- \beachmat{} and C++ were not used.
+We chose to use randomized PCA due to its speed -- on a server with 1 TB of RAM,
+randomized PCA required only 2.2 hours to compute the first 50 dimensions for an ordinary matrix containing 10\% of the data set.
+By comparison, PCA based on the standard SVD failed to complete on this subset after 310 hours.
+
+\section{Details of the computing environment}
+\label{sec:systemdetails}
+All timings and analyses (except for the comparison between randomized and standard SVD) were performed on a Dell OptiPlex 790 desktop with an Intel Core i5 processor and 8 GB of RAM, running Ubuntu 14.04.5 with R-devel (3.5) and packages from Bioconductor 3.7.
+On this machine, the 10X data analysis required approximately 4 hours for quality control;
+22 hours for cell cycle phase assignment (using three cores);
+12 hours for calculation of size factors and generation of normalized expression values;
+24 hours for detecting highly variable genes;
+and 30 hours for the randomized PCA.
+
+\bibliography{ref}
+\bibliographystyle{unsrt}
+
+\end{document}
