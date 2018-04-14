@@ -3,6 +3,8 @@
 \usepackage[margin=3cm]{geometry}
 \usepackage[hidelinks]{hyperref}
 
+\input{supp_refs.tex}
+
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -13,10 +15,9 @@
 \maketitle
 
 \noindent
-The timings above were obtained by accessing data from consecutive rows or columns.
 The chunk cache is not effective for a random access pattern, as there is no guarantee that the cached data will contain the next requested row or column.
 (We omit the situation where the entire matrix is loaded into the cache, as this defeats the purpose of file-backed storage.)
-In such cases, pure row- or column-based chunks may be necessary for optimal performance (Supplementary Figure~\ref{fig:hdf5layoutrandom}).
+In such cases, pure row- or column-based chunks may be necessary for optimal performance (\suppfighdfrandomchunk{}).
 However, the best layout is not clear at the time of file creation, especially for scRNA-seq data where it is sensible to access data by gene (row) or cell (column).
 Switching from one layout to the other may be necessary throughout the course of an analysis that performs random queries on both rows and columns.
 
@@ -31,11 +32,11 @@ Conversely, to convert to column-based chunks of size $(p_2, 1)$, a submatrix of
 The idea is to read and write entire chunks as much as possible, reducing the number of redundant reads from file.
 Only a submatrix of the data needs to be held in memory at each iteration, which reduces the overhead of the conversion.
 
-Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (Supplementary Figure~\ref{fig:hdf5rechunk}).
+Converting from one layout to the other with the above strategy is fast, requiring only a few seconds for small matrices (\suppfighdfrandomrechunk{}).
 The computational time scales linearly with matrix size, so for a large scRNA-seq data set with a million cells, we estimate that the conversion would take 2-3 hours.
 This is minor compared to the time spent by the entire analysis.
 Nonetheless, to maximize efficiency, all functions requiring column-based access (e.g., cell-based quality control and normalization) should be grouped together and executed first; 
-this should be followed by a layout conversion step, and then by execution of functions requiring row-based access, e.g., gene-based processing.
+this should be followed by a layout conversion step, and then by execution of functions requiring row-based access, e.g., calculation of gene-wise statistics.
 
 An alternative strategy is to store a matrix in both row- and column-chunked form as two separate HDF5 data sets in the same file.
 Ideally, both layouts would be referenced by a single R object, allowing the user to perform efficient random access to rows and columns simultaneously.
