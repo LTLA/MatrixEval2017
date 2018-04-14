@@ -1,0 +1,176 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[margin=3cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\beachmat}{\textit{beachmat}}
+\newcommand{\code}[1]{\texttt{#1}}
+\providecommand{\myceil}[1]{\left \lceil #1 \right \rceil }
+
+\title{S2 Text: optimizing HDF5 chunk cache parameters}
+\author{Aaron T. L. Lun, Herv\'e Pag\`es, Mike L. Smith}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+Matrix data in HDF5 files can be partitioned into chunks \cite{hdf5chunk}, where each chunk is a submatrix of the same dimensions.
+When a row or column of the matrix is requested, the HDF5 library will read all chunks that are overlapped by the requested row/column.
+Each chunk is read from file in its entirety, even if only a subset of the chunk is overlapped by the requested row/column.
+This is inefficient as more data needs to be processed than is required for the current request.
+To improve performance, the HDF5 library will cache a small number of chunks in memory once they are read from file.
+This means that the cached chunks do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
+Chunks are then evicted from the cache once the cache size limit is exceeded or if the hash indices of different chunks overlap (see Supplementary Section~\ref{sec:slotchoice}).
+This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
+However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
+
+\section{Selecting the size of the chunk cache}
+Assume that we have a chunk cache containing $s$ data values (this needs to be multiplied by the size of each value in bytes to obtain the actual cache size).
+Denote the number of rows and columns of our matrix as $m$ and $n$, respectively. 
+We further assume that these data are stored in a chunked layout, where the number of rows and columns in each chunk is $p$ and $q$, respectively.
+
+The chunk size $s$ should be chosen so that it can hold all chunks lying across a row or column.
+Each chunk contains $pq$ values, and each row and column overlaps $\myceil{n/q}$ and $\myceil{m/p}$ chunks, respectively.
+This reflects the fact that each chunk is stored in its entirety, even at the right/bottom edges of the matrix where a chunk may not be completely filled.
+For row access, this means that 
+\begin{equation}
+s \ge \myceil{n/q}pq \;, 
+\end{equation}
+i.e., all chunks overlapping a particular row are held in memory. Simliarly, for column access, 
+\begin{equation}
+s \ge \myceil{m/p}pq \;.
+\end{equation}
+This ensures that all chunks overlapping a particular row or column are retained in memory.
+Otherwise, if $s$ is too small, existing chunks in the cache would be evicted before the current row or column is fully read.
+This would preclude the use of the cache to rapidly load data for the next row or column.
+
+% Note that partial edge filtering is turned on by default: https://support.hdfgroup.org/HDF5/doc/RM/H5P/H5Pset_chunk_opts.htm.
+
+\section{Choosing the number of slots}
+\label{sec:slotchoice}
+The chunk cache works by hashing the chunks according to their location in a one-dimensional array.
+Consider a ``meta-matrix'' of chunks, where each chunk in the original matrix constitutes one entry in the meta-matrix.
+A meta-row consists of all chunks along one row of this meta-matrix.
+Similarly, a meta-column consists of all chunks along one column of the meta-matrix. 
+Denote the number of meta-rows and meta-columns as $m_0$ and $n_0$, respectively.
+Now, flatten the meta-matrix into a one-dimensional array of chunks, organized in row-major format.
+The first chunk is assigned a hash index of 1 (technically 0, but we will use 1-based indexing for simplicity here).
+The next chunk is assigned a hash index of 2, and so on.
+When the hash index exceeds the number of cache slots $v$, it is reset to 1 for the next chunk.
+This continues until a hash index is assigned to all entries of the meta-matrix.
+
+The hash indices are important as two chunks with the same hash index cannot co-exist in the chunk cache.
+This means that $v$ must be carefully chosen to ensure that all chunks in a meta-row or a meta-column have unique hash indices.
+Otherwise, an existing chunk in the cache will be evicted by a newer chunk with the same hash index.
+This would require the re-reading of the data in the older chunk when accessing the next row/column, defeating the purpose of the cache.
+For a meta-row, guaranteeing unique indices is trivial as $v$ only needs to be chosen to be greater than or equal to $n_0$.
+
+For a meta-column, more care is required.
+Consider the first chunk lying in the first meta-column with a hash index of 1.
+The hash index of 1 will only return to the first meta-column when the sequence $\{1, \ldots, v\}$ has been repeated enough times $r$ such that $rv$ is the smallest multiple of $n_0$.
+Prior to this, all assigned values of the first meta-column will be unique.
+This is obvious because non-unique values of the hash index in the first meta-column would imply an existing repeating structure, which is not possible without repeating the hash index of 1.
+(The same logic can be applied to any other value of the hash index in any other meta-column.)
+As the number of rows covered by $rv$ is equal to $rv/n_0$, we simply need to choose $v$ such that $rv/n_0 \ge m_0$.
+This ensures that the hash index can never repeat itself for a given meta-column before hash indices are assigned to all entries in the meta-matrix.
+The most direct approach is to set $v = kn_0 + 1$  where $k \in \mathbf{N}^+$ and $kn_0 +1 \ge m_0$.
+This guarantees that the lowest common multiple of $v$ and $n_0$ is their product, and that $rv/n_0 \ge m_0$.
+
+% Note that in the actual implementation, the meta rows are columns and vice versa.
+% This is because rhdf5 internally transposes the data so that HDF5's row-major becomes R's column-major.
+
+\section{Choosing the chunk dimensions}
+The preceding text assumes that the chunk dimensions $p$ and $q$ were set beforehand.
+This is the case for existing HDF5 files, where the chunk layout must be specified during data set creation.
+However, for new files, we have an opportunity to choose the chunk dimensions to improve data access.
+
+To access data from a particular row, we need to read all chunks overlapped by that row, i.e., $\myceil{n/q}$ chunks.
+Once these are loaded into the cache, no more chunks need to be read from file to access the next $p-1$ rows, i.e., data are held in memory for all $p$ rows simultaneously.
+For comparison, consider a layout containing row chunks, i.e., each chunk is an entire row.
+This provides efficient access to any single row as one chunk obtains all and only that row's data.
+To access $p$ rows from a row-chunked layout, $p$ chunks would need to be read from file.
+Thus, for accessing consecutive rows with $p \times q$ chunks, we can read the same number of chunks (or fewer) as the row-chunked layout if 
+\begin{equation}
+\myceil{n/q} \le p \;.
+\end{equation}
+The same logic applies to column access, where $\myceil{m/p}$ reads are required to store data for $q$ consecutive columns.
+A layout with pure column chunks would require $q$ reads to access the same data.
+If 
+\begin{equation}
+\myceil{m/p} \le q \;,
+\end{equation}
+we can access data in consecutive columns with the same number of chunk reads (or fewer) as the column-chunked layout. 
+The number of chunks that need to be read is a major factor in HDF5 access speed.
+By choosing $p$ and $q$ to satisfy Inequalities~3 and 4, we can obtain a file layout that provides fast access for both consecutive rows and columns, comparable to pure row- or column-based chunking.
+
+Obviously, any arbitrarily large $p$ and $q$ will satisfy Inequalities~3 and 4.
+To avoid this, we use Inequalities~1 and 2 to determine the minimum chunk cache size.
+The aim is to satisfy all of the inequalities while minimizing $s$ to reduce the memory overhead.
+In general, this requires some numerical analysis to account for the discrete nature of the dimensions.
+We obtain some approximate values by treating all variables as continuous, which allows us to satisfy all inequalities when $s \ge \max\{m\sqrt{n}, n\sqrt{m}\}$.
+Once the smallest $s$ is obtained, the largest $p$ and $q$ are easily determined.
+
+%%% OVERVIEW:
+% 3 and 4 require that pq >= n and pq >= m
+% 1 and 2 require that s >= np and s >= mq
+
+% Assume m >= n and mq >= np. 
+% This means that we need pq >= m and s >= mq.
+% The smallest value of s occurs at the smallest value of q (as m is constant).
+% The smallest value of q is either np/m or m/p. 
+% If m/p >= np/m, then the smallest allowable value of q is m/p. The inequality yields p <= m/n^0.5, which means that q >= n^0.5.
+% If m/p <= np/m, then the smallest allowable value of q is np/m. The inequality yields p >= m/n^0.5, which means that q >= n^0.5.
+% Either way, this means that the smallest value of s is mn^0.5.
+
+% Now assume that m <= n and mq >= np.
+% This means that we need pq >= n and s >= mq.
+% The smallest value of q is now either n/p or np/m.
+% If n/p >= np/m, we get p <= m^0.5, which means that q >= n/m^0.5
+% If n/p <= np/m, we get p >= m^0.5, which means that q >= n/m^0.5.
+% Either way, this means that the smallest value of s is nm^0.5.
+%
+% By symmetry, we would get these two options if we swapped m <=> n and p <=> q.
+
+\section{Worked example of choosing chunk settings}
+Assume that we have a matrix with 20000 rows and 50000 columns.
+Our approach suggests that we should choose $s$ as being greater than $50000\sqrt{20000} \approx 7071068$ for optimal access.
+We set $s=8000000$ to simplify the later divisions, which corresponds to an in-memory size of 64 MB for double-precision values.
+Our chunk dimensions are $p = s/50000 = 160$ and $q = s/20000 = 400$.
+In practice, one may wish to cap the cache size at the cost of some performance, lest too much memory be requested.
+
+\textit{beachmat} provides functions to perform the above calculations given $m$ and $n$.
+However, \textit{beachmat} will not automatically use the computed $p$ and $q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
+The optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
+The choice of $p$ and $q$ above is only well-suited for consecutive row and column accesses, while the actual access pattern might be random (see Supplementary Section~\ref{sec:random}).
+Thus, the chunk dimensions must be explicitly chosen by the user/developer.
+Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
+
+\section{Testing different layouts with simulated data}
+Here, we demonstrate the effect of the HDF5 file layout on data access speed.
+For consecutive column access, we considered the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
+The contiguous layout is the fastest as all relevant data is obtained in one read from file per column (Figure~3a).
+Column-wise chunking also involves a single read from file to obtain the chunk corresponding to the requested column, but is likely slower due to the overhead of decompression and chunk caching.
+Rectangular chunking is slightly slower than column-wise chunks, despite the optimized size of the cache -- this is attributable to the time spent collecting data across multiple cached chunks.
+As expected, column access with row-wise chunks is the slowest.
+
+Timings are reversed for consecutive row access, where row-wise chunking provides the best performance (Figure~3b).
+This is expected as only one chunk read is required to obtain all data in a single row.
+Access is much slower with column-wise chunking or a contiguous layout.
+Importantly, rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
+This highlights the utility of rectangular chunks for both row and column accesses with \beachmat{},
+compared to the other schemes where performance deteriorates rapidly for non-ideal access patterns.
+
+These timings have a caveat in that the poor performance of row-wise chunks for column access (and vice versa) is not directly caused by multiple redundant reads from file.
+The data sets used in this simulation are small enough that \beachmat{} automatically loads all row-wise chunks (i.e., the entire matrix) into the HDF5 chunk cache when any column is requested, and similarly for all column-wise chunks when any row is requested.
+Reduced speed is probably due to the need to collect data across many cached chunks, rather than multiple reads. 
+Obviously, caching the entire matrix is not possible for the very large data sets that motivate the use of file-backed representations.
+For these, further degradation in performance can be expected when the API is forced to re-read chunks from file.
+
+% I don't know why the rectangular layout gets faster for large matrices.
+% My guess is that the chunk size gets larger and larger for pure row/column-based chunks, and this interferes with the read buffer or something.
+
+\bibliography{ref}
+\bibliographystyle{unsrt}
+
+\end{document}
