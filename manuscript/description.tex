@@ -167,6 +167,7 @@
 %% Include all macros below
 
 \input{supp_refs.tex}
+
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
 
@@ -269,7 +270,7 @@ By operating synergistically with existing Bioconductor infrastructure, \beachma
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
 We define a base class that implements common methods for all representations of a given data type (e.g., integer, double-precision, character strings).
 Each specific representation is associated with a derived C++ class that provides customized implementations of the access methods.
-The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Figure~\ref{fig:beachoverview}).
+The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Fig~\ref{fig:beachoverview}).
 \beachmat{} then produces a corresponding C++ object, returning a pointer to the base class.
 This pointer is the same regardless of the representation and can be used in downstream C++ code to achieve run-time polymorphism.
 
@@ -305,7 +306,7 @@ Our results indicate that \beachmat{} provides comparable performance to a refer
 This representation only stores non-zero values in RAM, which is highly memory-efficient for assays that yield many zeroes, e.g., scRNA-seq.
 When the density of non-zero entries is low, column access from CSC matrices may also be faster than the equivalent ordinary matrix (\suppsecsparsecol{}, \suppfigsparsecol{}).
 However, row access from CSC matrices is more complex, as obtaining elements from an arbitrary row of the matrix involves a binary search for each column (\suppsecsparserow{}).
-We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Figure~\ref{fig:sparse}).
+We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Fig~\ref{fig:sparse}).
 This provides a 4-fold increase in speed compared to a naive approach, as well as faster row-level access than the \textit{RcppArmadillo} and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}.
 Our caching strategy also improves performance for non-consecutive row access (\suppfigsparserandom{}).
 
@@ -326,7 +327,7 @@ As a result, it is very memory-efficient but much slower than the other represen
 A key determinant of access speed is the layout of the HDF5 file, where data can be split into ``chunks'' for easier retrieval.
 Once read, chunks can be cached in memory to avoid redundant retrieval of data from the same chunk in adjacent rows or columns.
 To improve performance, \beachmat{} automatically tunes the parameters of the HDF5 chunk cache to optimize data access from consecutive rows or columns (\suppseclayoutoptim{}).
-This allows \beachmat{} to use the same rectangular chunking layout for row and column access (Figure~\ref{fig:hdf5}) with performance comparable to pure row- and column-chunking layouts.
+This allows \beachmat{} to use the same rectangular chunking layout for row and column access (Fig~\ref{fig:hdf5}) with performance comparable to pure row- and column-chunking layouts.
 We also provide functions to choose suitable chunk dimensions during file creation, when consecutive row or column access is expected downstream;
 as well as functions to convert to layouts that are well-suited for random row or column access (\suppfighdfrandom{}, \suppseclayoutrandom{}).
 
@@ -398,10 +399,10 @@ However, for our purposes, the smaller number of cells in this data set is desir
 
 We converted the Zeisel \textit{et al.} data to the various matrix representations and measured the access speed for the row- or column-level data with \beachmat{}.
 We observed similar results to those obtained with simulated data, recapitulating the different trade-offs between access speed and RAM usage across representations.
-Specifically, row and column accesses from an ordinary matrix were fastest, followed by accesses from a sparse matrix (Figure~\ref{fig:zeisel}a, b).
+Specifically, row and column accesses from an ordinary matrix were fastest, followed by accesses from a sparse matrix (Fig~\ref{fig:zeisel}a, b).
 HDF5-backed matrices provided slowest access but also the smallest memory footprint (2 KB, compared to 480 MB for ordinary matrices and 130 MB for sparse matrices).
 The size of the HDF5 file was relatively small, requiring only 16-20 MB of space for each \code{HDF5Matrix} instance.
-We also recorded the time required to compute some gene- or cell-specific metrics (Figure~\ref{fig:zeisel}c, \suppsecrealzeisel{}) commonly used in scRNA-seq data analysis.
+We also recorded the time required to compute some gene- or cell-specific metrics (Fig~\ref{fig:zeisel}c, \suppsecrealzeisel{}) commonly used in scRNA-seq data analysis.
 Our custom C++ functions based on \beachmat{} were at least comparable to the built-in R functions, and were faster in some cases by avoiding a type conversion to a logical matrix.
 
 \begin{figure}[b]
@@ -426,9 +427,9 @@ By incorporating \beachmat{} into the C++ code, an R package can dynamically acc
 To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use \beachmat{} in their C++ code.
 We applied these functions to the 1.3 million brain cell data set from 10X Genomics (\suppsecrealtenx{}).
 First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
-Most cells were identified as being in G1 phase (Figure~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
+Most cells were identified as being in G1 phase (Fig~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
 Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
-The size factor for each cell was generally well-correlated with the library size (Figure~\ref{fig:tenx}b).
+The size factor for each cell was generally well-correlated with the library size (Fig~\ref{fig:tenx}b).
 However, a few cells have size factors that are much smaller than expected based on their library sizes, and there is a modest amount of scatter around the size factor-library size trend.
 This is consistent with composition effects \cite{robinson2010scaling} caused by differential gene expression between cell subpopulations.
 
@@ -450,9 +451,9 @@ This is consistent with composition effects \cite{robinson2010scaling} caused by
 
 We detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
 This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
-We identified a number of HVGs (Figure~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} \cite{ kay2011neurod6} and \textit{Sox11} \cite{bergsland2006establishment}. 
+We identified a number of HVGs (Fig~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} \cite{ kay2011neurod6} and \textit{Sox11} \cite{bergsland2006establishment}. 
 Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized principal components analysis (PCA) \cite{halko2011finding}.
-Visualization of the first two principal components (PCs) showed clear substructure in the cell population (Figure~\ref{fig:tenx}d), reflecting the diversity of cell types in the mouse brain.
+Visualization of the first two principal components (PCs) showed clear substructure in the cell population (Fig~\ref{fig:tenx}d), reflecting the diversity of cell types in the mouse brain.
 Indeed, once PCA has been performed, the first 10-100 PCs for each cell can be used as a summary of its expression profile.
 This can be stored as an ordinary matrix and supplied directly to other R functions for clustering \cite{xu2015identification,csardi2006igraph} or trajectory reconstruction \cite{trapnell2014dynamics}.
 At this point, memory usage ceases to be an issue and we only need to choose algorithms that are scalable with respect to the number of cells.

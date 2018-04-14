@@ -151,12 +151,12 @@ Obviously, this is irrelevant when accessing data from existing HDF5 files where
 \section{Testing different layouts with simulated data}
 Here, we demonstrate the effect of the HDF5 file layout on data access speed.
 For consecutive column access, we considered the performance of \beachmat{} with a contiguous layout, column-wise chunks with compression, and row-wise chunks.
-The contiguous layout is the fastest as all relevant data is obtained in one read from file per column (Figure~3a).
+The contiguous layout is the fastest as all relevant data is obtained in one read from file per column (Fig~3a).
 Column-wise chunking also involves a single read from file to obtain the chunk corresponding to the requested column, but is likely slower due to the overhead of decompression and chunk caching.
 Rectangular chunking is slightly slower than column-wise chunks, despite the optimized size of the cache -- this is attributable to the time spent collecting data across multiple cached chunks.
 As expected, column access with row-wise chunks is the slowest.
 
-Timings are reversed for consecutive row access, where row-wise chunking provides the best performance (Figure~3b).
+Timings are reversed for consecutive row access, where row-wise chunking provides the best performance (Fig~3b).
 This is expected as only one chunk read is required to obtain all data in a single row.
 Access is much slower with column-wise chunking or a contiguous layout.
 Importantly, rectangular chunking is only slightly slower than row-wise chunking when the chunk cache is optimized.
