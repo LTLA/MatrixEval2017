@@ -1,4 +1,6 @@
-all: Figure1.pdf Figure2.pdf Figure3.pdf Figure4.pdf Figure5.pdf S1_Fig.pdf S2_Fig.pdf S3_Fig.pdf S4_Fig.pdf S5_Fig.pdf S6_Fig.pdf S7_Fig.pdf S8_Fig.pdf
+all: Figure1.pdf Figure2.pdf Figure3.pdf Figure4.pdf Figure5.pdf \
+		S1_Fig.pdf S2_Fig.pdf S3_Fig.pdf S4_Fig.pdf S5_Fig.pdf S6_Fig.pdf S7_Fig.pdf S8_Fig.pdf \
+		S1_Text.pdf S2_Text.pdf S3_Text.pdf S4_Text.pdf
 
 Figure1.pdf: pics/overview.svg
 	inkscape -D -A $@ $<
@@ -48,4 +50,29 @@ S7_Fig.pdf: pics/supp_hdf5_rechunk.tex
 
 S8_Fig.pdf: ../simulations/timings/pics/mat_mult.pdf
 	pdfcrop $< $@
-   
+
+S1_Text.pdf: S1_text.tex
+	pdflatex $<
+	bibtex `echo $< | sed "s/\\.tex//"`
+	pdflatex $<
+	pdflatex $<
+	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
+
+S2_Text.pdf: S2_text.tex
+	pdflatex $<
+	bibtex `echo $< | sed "s/\\.tex//"`
+	pdflatex $<
+	pdflatex $<
+	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
+
+S3_Text.pdf: S3_text.tex
+	pdflatex $<
+	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
+
+S4_Text.pdf: S4_text.tex
+	pdflatex $<
+	bibtex `echo $< | sed "s/\\.tex//"`
+	pdflatex $<
+	pdflatex $<
+	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
+
