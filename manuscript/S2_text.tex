@@ -3,6 +3,8 @@
 \usepackage[margin=3cm]{geometry}
 \usepackage[hidelinks]{hyperref}
 
+\input{supp_refs.tex}
+
 \newcommand{\beachmat}{\textit{beachmat}}
 \newcommand{\code}[1]{\texttt{#1}}
 \providecommand{\myceil}[1]{\left \lceil #1 \right \rceil }
@@ -21,7 +23,7 @@ Each chunk is read from file in its entirety, even if only a subset of the chunk
 This is inefficient as more data needs to be processed than is required for the current request.
 To improve performance, the HDF5 library will cache a small number of chunks in memory once they are read from file.
 This means that the cached chunks do not have to be re-read if a neighbouring row/column (overlapping the same set of chunks) is requested.
-Chunks are then evicted from the cache once the cache size limit is exceeded or if the hash indices of different chunks overlap (see Supplementary Section~\ref{sec:slotchoice}).
+Chunks are then evicted from the cache once the cache size limit is exceeded or if the hash indices of different chunks overlap (see Section~\ref{sec:slotchoice} below).
 This behaviour allows efficient access to consecutive rows or columns in the HDF5 file.
 However, some tuning of the parameters of the HDF5 chunk cache is required to achieve this, which we discuss below.
 
@@ -142,7 +144,7 @@ In practice, one may wish to cap the cache size at the cost of some performance,
 \textit{beachmat} provides functions to perform the above calculations given $m$ and $n$.
 However, \textit{beachmat} will not automatically use the computed $p$ and $q$ as the chunk dimensions for output \texttt{HDF5Matrix}.
 The optimal chunk dimensions depend on the anticipated access patterns, which are unknown to the \textit{beachmat} API at the time of file creation.
-The choice of $p$ and $q$ above is only well-suited for consecutive row and column accesses, while the actual access pattern might be random (see Supplementary Section~\ref{sec:random}).
+The choice of $p$ and $q$ above is only well-suited for consecutive row and column accesses, while the actual access pattern might be random (as discussed in \suppseclayoutrandom{}).
 Thus, the chunk dimensions must be explicitly chosen by the user/developer.
 Obviously, this is irrelevant when accessing data from existing HDF5 files where the layout is already fixed.
 
