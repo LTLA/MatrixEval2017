@@ -3,9 +3,4 @@
 *.o
 *.so
 *.h5
-description.aux
-description.bbl
-description.blg
-description.log
-description.out
 
