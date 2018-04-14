@@ -1,6 +1,7 @@
-all: Figure1.eps Figure2.eps Figure3.eps Figure4.eps Figure5.eps \
-		S1_Fig.pdf S2_Fig.pdf S3_Fig.pdf S4_Fig.pdf S5_Fig.pdf S6_Fig.pdf S7_Fig.pdf S8_Fig.pdf \
-		S1_Text.pdf S2_Text.pdf S3_Text.pdf S4_Text.pdf
+all: main.pdf \
+	Figure1.eps Figure2.eps Figure3.eps Figure4.eps Figure5.eps \
+	S1_Fig.pdf S2_Fig.pdf S3_Fig.pdf S4_Fig.pdf S5_Fig.pdf S6_Fig.pdf S7_Fig.pdf S8_Fig.pdf \
+	S1_Text.pdf S2_Text.pdf S3_Text.pdf S4_Text.pdf
 
 Figure1.eps: pics/overview.svg
 	inkscape -D -E $@ $<
@@ -84,3 +85,11 @@ S4_Text.pdf: S4_text.tex
 	pdflatex $<
 	mv `echo $< | sed "s/\\.tex/.pdf/"` $@
 
+main.pdf: description.tex
+	pdflatex $<
+	bibtex `echo $< | sed "s/\\.tex//"`
+	pdflatex $<
+	pdflatex $<
+	echo "X <- readLines('description.tex'); chosen <- grep('bibliography.ref.', X); Y <- c(X[seq_len(chosen-1)], readLines('description.bbl'), X[seq(chosen+1, length(X))]); writeLines(Y, con='main.tex')" | R --slave
+	pdflatex main.tex
+	pdflatex main.tex
