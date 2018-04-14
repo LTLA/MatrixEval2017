@@ -1,25 +1,33 @@
-all: Figure1.pdf Figure2.pdf Figure3.pdf Figure4.pdf Figure5.pdf \
+all: Figure1.eps Figure2.eps Figure3.eps Figure4.eps Figure5.eps \
 		S1_Fig.pdf S2_Fig.pdf S3_Fig.pdf S4_Fig.pdf S5_Fig.pdf S6_Fig.pdf S7_Fig.pdf S8_Fig.pdf \
 		S1_Text.pdf S2_Text.pdf S3_Text.pdf S4_Text.pdf
 
-Figure1.pdf: pics/overview.svg
-	inkscape -D -A $@ $<
+Figure1.eps: pics/overview.svg
+	inkscape -D -E $@ $<
 
-Figure2.pdf: pics/figure_sparse_times.tex ../simulations/timings/pics/sparse_row_density.pdf ../simulations/timings/pics/sparse_row_nrow.pdf
+Figure2.eps: pics/figure_sparse_times.tex ../simulations/timings/pics/sparse_row_density.pdf ../simulations/timings/pics/sparse_row_nrow.pdf
 	cd pics; pdflatex `basename $<`
-	pdfcrop pics/figure_sparse_times.pdf $@
+	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
+	pdftops -eps tmp.pdf $@
+	rm tmp.pdf
 
-Figure3.pdf: pics/figure_hdf5_times.tex ../simulations/timings/pics/HDF5_col_layout.pdf ../simulations/timings/pics/HDF5_row_layout.pdf
+Figure3.eps: pics/figure_hdf5_times.tex ../simulations/timings/pics/HDF5_col_layout.pdf ../simulations/timings/pics/HDF5_row_layout.pdf
 	cd pics; pdflatex `basename $<`
-	pdfcrop pics/figure_hdf5_times.pdf $@
+	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
+	pdftops -eps tmp.pdf $@
+	rm tmp.pdf
 
-Figure4.pdf: pics/figure_zeisel.tex ../real/zeisel/pics/zeisel_col.pdf ../real/zeisel/pics/zeisel_row.pdf ../real/zeisel/pics/zeisel_detection.pdf
+Figure4.eps: pics/figure_zeisel.tex ../real/zeisel/pics/zeisel_col.pdf ../real/zeisel/pics/zeisel_row.pdf ../real/zeisel/pics/zeisel_detection.pdf
 	cd pics; pdflatex `basename $<`
-	pdfcrop pics/figure_zeisel.pdf $@
+	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
+	pdftops -eps tmp.pdf $@
+	rm tmp.pdf
 
-Figure5.pdf: pics/figure_10x.tex ../real/10X/pics/cycle.pdf ../real/10X/pics/sizefacs.pdf ../real/10X/pics/hvg.pdf ../real/10X/pics/pca.pdf
+Figure5.eps: pics/figure_10x.tex ../real/10X/pics/cycle.pdf ../real/10X/pics/sizefacs.pdf ../real/10X/pics/hvg.pdf ../real/10X/pics/pca.pdf
 	cd pics; pdflatex `basename $<`
-	pdfcrop pics/figure_10x.pdf $@
+	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
+	pdftops -eps tmp.pdf $@
+	rm tmp.pdf
 
 S1_Fig.pdf: pics/supp_simple.tex
 	cd pics; pdflatex `basename $<`
