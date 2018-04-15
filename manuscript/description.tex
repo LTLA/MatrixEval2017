@@ -426,10 +426,10 @@ By incorporating \beachmat{} into the C++ code, an R package can dynamically acc
 \subsection*{Analysis of the large 10X data set}
 To demonstrate the utility of \beachmat{} for faciliting analyses of large data sets, we converted several functions in the \textit{scater} \cite{mccarthy2017scater} and \textit{scran} packges \cite{lun2016stepbystep} to use \beachmat{} in their C++ code.
 We applied these functions to the 1.3 million brain cell data set from 10X Genomics (\suppsecrealtenx{}).
-First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}. 
+First, we called cell cycle phase with the \code{cyclone} method \cite{scialdone2015computational}, which required access to each column (i.e., single cell) of the count matrix via \beachmat{}. 
 Most cells were identified as being in G1 phase (Fig~\ref{fig:tenx}a), consistent with the presence of differentiated neurons that are not actively cycling.
-Next, we applied the deconvolution method \cite{lun2016pooling} to compute size factors to normalize for cell-specific biases.
-The size factor for each cell was generally well-correlated with the library size (Fig~\ref{fig:tenx}b).
+Next, we applied the deconvolution method \cite{lun2016pooling} to normalize for cell-specific biases, again using column-level data access.
+This yielded a size factor for each cell, which was generally well-correlated with the library size (Fig~\ref{fig:tenx}b).
 However, a few cells have size factors that are much smaller than expected based on their library sizes, and there is a modest amount of scatter around the size factor-library size trend.
 This is consistent with composition effects \cite{robinson2010scaling} caused by differential gene expression between cell subpopulations.
 
@@ -449,8 +449,9 @@ This is consistent with composition effects \cite{robinson2010scaling} caused by
     \label{fig:tenx}
 \end{figure}
 
-We detected highly variable genes (HVGs) based on the variance of the log-normalized expression values \cite{lun2016stepbystep}.
-This was performed while blocking on the sequencing library of origin for each cell, to regress out technical factors of variation unrelated to biological heterogeneity.
+We detected highly variable genes (HVGs) based on the variance of the log-normalized expression values for each gene \cite{lun2016stepbystep}.
+We blocked on the sequencing library of origin for each cell to regress out technical factors of variation unrelated to biological heterogeneity.
+This was done on a gene-by-gene basis, and thus required row-level access to the log-expresion matrix via \beachmat{}.
 We identified a number of HVGs (Fig~\ref{fig:tenx}c), including genes involved in neuronal differentiation and function such as \textit{Neurod6} \cite{ kay2011neurod6} and \textit{Sox11} \cite{bergsland2006establishment}. 
 Finally, we performed dimensionality reduction on the HVG expression profiles for all cells using randomized principal components analysis (PCA) \cite{halko2011finding}.
 Visualization of the first two principal components (PCs) showed clear substructure in the cell population (Fig~\ref{fig:tenx}d), reflecting the diversity of cell types in the mouse brain.
