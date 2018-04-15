@@ -44,8 +44,8 @@ for (density in c(0.01, 0.05, 0.1, 0.2, 0.5, 1)) {
     for (it in seq_len(10)) {         
         sparse.counts <- as.matrix(rsparsematrix(ngenes, ncells, density))
         out.contig <- writeHDF5Array(sparse.counts, fpaths[1], name="yay", level=0)
-        out.bycol <- writeHDF5Array(sparse.counts, fpaths[2], name="yay", chunk_dim=c(ngenes, 1), level=6)
-        out.bycol0 <- writeHDF5Array(sparse.counts, fpaths[3], name="yay", chunk_dim=c(ngenes, 1), level=0)
+        out.bycol <- writeHDF5Array(sparse.counts, fpaths[2], name="yay", chunkdim=c(ngenes, 1), level=6)
+        out.bycol0 <- writeHDF5Array(sparse.counts, fpaths[3], name="yay", chunkdim=c(ngenes, 1), level=0)
 
         contig.size[it] <- file.info(path(out.contig))$size/1e3
         colchunk.size[it] <- file.info(path(out.bycol))$size/1e3

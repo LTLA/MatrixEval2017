@@ -26,8 +26,8 @@ for (n in c(500, 1000, 2000)) {
     
         fpaths <- c("mm_tmp1.h5", "mm_tmp2.h5")
         if (any(file.exists(fpaths))) { unlink(fpaths) }
-        a2 <- writeHDF5Array(a, fpaths[1], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
-        b2 <- writeHDF5Array(b, fpaths[2], name="yay", chunk_dim=c(chunksize, chunksize), level=6)
+        a2 <- writeHDF5Array(a, fpaths[1], name="yay", chunkdim=c(chunksize, chunksize), level=6)
+        b2 <- writeHDF5Array(b, fpaths[2], name="yay", chunkdim=c(chunksize, chunksize), level=6)
         beach.hdf5.time[it] <- timeExprs(standardMatrixMultiply(a2, b), times=1) # Switching order is slower, as inner loop reads from file. 
         beach.hdf5.time2[it] <- timeExprs(standardMatrixMultiply(a2, b2), times=1) 
         default.hdf5.time[it] <- timeExprs(a2 %*% b, times=1) # Multiplication of 2 DelayedArray objects is not supported.

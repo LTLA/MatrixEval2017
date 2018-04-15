@@ -14,7 +14,7 @@ storage.mode(dense.counts) <- "double" # for proper comparison with sparse matri
 sparse.counts <- as(Matrix(dense.counts), "dgCMatrix")
 
 chunksize <- 200
-hdf5.counts <- writeHDF5Array(dense.counts, chunk_dim=c(chunksize, chunksize), level=6)
+hdf5.counts <- writeHDF5Array(dense.counts, chunkdim=c(chunksize, chunksize), level=6)
 options(DelayedArray.block.size=nrow(counts)*chunksize*8) # Avoid just loading the entire matrix in, which would be misleading.
 
 # Running across all modes.

@@ -18,7 +18,7 @@ for (it in 1:10) {
             fpath <- "a.h5"
             if (file.exists(fpath)) { unlink(fpath) }
             y <- matrix(rnorm(1000000), nrow=100)
-            X <- writeHDF5Array(y, fpath, name="yay", chunk_dim=c(100, 100), level=6)
+            X <- writeHDF5Array(y, fpath, name="yay", chunkdim=c(100, 100), level=6)
         }
 
         N <- ifelse(mode=="hdf5", 1, 10)

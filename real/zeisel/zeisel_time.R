@@ -14,9 +14,9 @@ sparse.counts <- as(Matrix(dense.counts), "dgCMatrix")
 library(HDF5Array)
 fpath <- c("bycol.h5", "byrow.h5", "rect.h5")
 for (f in fpath) { if (file.exists(f)) { unlink(f) } }
-hdf5.by.col <- writeHDF5Array(dense.counts, fpath[1], name="yay", chunk_dim=c(nrow(dense.counts), 1), level=6)
-hdf5.by.row <- writeHDF5Array(dense.counts, fpath[2], name="yay", chunk_dim=c(1, ncol(dense.counts)), level=6)
-hdf5.rect <- writeHDF5Array(dense.counts, fpath[3], name="yay", chunk_dim=c(200, 200), level=6)
+hdf5.by.col <- writeHDF5Array(dense.counts, fpath[1], name="yay", chunkdim=c(nrow(dense.counts), 1), level=6)
+hdf5.by.row <- writeHDF5Array(dense.counts, fpath[2], name="yay", chunkdim=c(1, ncol(dense.counts)), level=6)
+hdf5.rect <- writeHDF5Array(dense.counts, fpath[3], name="yay", chunkdim=c(200, 200), level=6)
 
 write.table(data.frame(Sizes=c(ordinary=object.size(dense.counts)/1e3,
                                sparse=object.size(sparse.counts)/1e3,
