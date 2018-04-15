@@ -311,7 +311,7 @@ pdf("mat_mult.pdf", width=11, height=8)
 layout(cbind(1, 2), width=c(5, 2))
 par(mar=c(5.1, 4.1, 2.1, 0.1))
 plotter(incoming, "N", mult_cols, pch=mult_pch, lty=mult_lty,
-        xlab=expression("Order ("*10^3*")"), cex.axis=1, loc=NA)
+        xlab="Order", cex.axis=1, loc=NA)
 par(mar=c(5.1, 0.1, 2.1, 0.1))
 plot.new()
 legend("left", col=mult_cols, lty=mult_lty[names(mult_cols)], pch=mult_pch[names(mult_cols)],
