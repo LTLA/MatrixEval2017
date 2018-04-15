@@ -128,7 +128,7 @@ This avoids unnecessary memory usage when only column accesses are requested fro
 
 Despite these optimisations, row access with sparse matrices in \beachmat{} remains slower than that with ordinary matrices (Fig~2a).
 This is not surprising as there is less work to do when retrieving data from a simpler representation.
-The exception is with large matrices of low density (Fig~2b), probably because the cost of retrieving non-contiguous blocks of RAM from an ordinary matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
+The exception is with large matrices of low density (Fig~2b), probably because the cost of retrieving non-contiguous blocks of data from RAM for an ordinary matrix exceeds the cost of examining both $i$ and $x$ per non-zero entry in a sparse matrix.
 In addition, consecutive row access from sparse matrices with \beachmat{} is 30-50 times faster than using \textit{RcppArmadillo}.
 For a 10000-by-1000 sparse matrix with 1\% non-zero entries, \beachmat{} takes 39.8 milliseconds to access each row and compute the row sums, while \textit{RcppArmadillo} takes 1921.4 milliseconds.
 These results motivate the use of \beachmat{} for general data access from sparse matrices in C++ code.
