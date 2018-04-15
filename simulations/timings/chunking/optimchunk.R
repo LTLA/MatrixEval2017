@@ -15,14 +15,17 @@ overwrite <- TRUE
 fpaths <- file.path(tmp.dir, c("mult.h5", "nonmult.h5"))
 
 for (redchunk in 0:1) {
-    system(sprintf("g++ -DDECACHE=%i -std=c++11 tester.cpp -lhdf5_cpp -lhdf5 -o HDF5ChunkTester", redchunk))
+    system(sprintf("g++ -DDECACHE=%i -std=c++11 -I%s -o HDF5ChunkTester tester.cpp %s -lz -ldl", 
+           redchunk,
+           system.file("include", package="Rhdf5lib"), 
+           capture.output(Rhdf5lib::pkgconfig())))
 
     hdf5m.col.time <- hdf5m.row.time <- numeric(10)
     hdf5nm.col.time <- hdf5nm.row.time <- numeric(10)
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.mult <- writeHDF5Array(dense.counts, fpaths[1], name="yay", chunk_dim=c(100, 100), level=6)
-        out.nmult <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(109, 97), level=6)
+        out.mult <- writeHDF5Array(dense.counts, fpaths[1], name="yay", chunkdim=c(100, 100), level=6)
+        out.nmult <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunkdim=c(109, 97), level=6)
 
         hdf5m.col.time[it] <- timeExprs(system(sprintf("./HDF5ChunkTester %s yay 0", fpaths[1])), times=1)
         hdf5m.row.time[it] <- timeExprs(system(sprintf("./HDF5ChunkTester %s yay 1", fpaths[1])), times=1)
@@ -49,15 +52,17 @@ for (redchunk in 0:1) {
 # This shouldn't affect column access but row access should be totally broken.
 
 for (redchunk in 0:1) {
-    system(sprintf("g++ %s -std=c++11 tester.cpp -lhdf5_cpp -lhdf5 -o HDF5ChunkTester", 
-                   ifelse(redchunk==0, "", "-DBADSLOT")))
+    system(sprintf("g++ %s -std=c++11 -I%s -o HDF5ChunkTester tester.cpp %s -lz -ldl", 
+           ifelse(redchunk==0, "", "-DBADSLOT"),
+           system.file("include", package="Rhdf5lib"), 
+           capture.output(Rhdf5lib::pkgconfig())))
 
     hdf5m.col.time <- hdf5m.row.time <- numeric(10)
     hdf5nm.col.time <- hdf5nm.row.time <- numeric(10)
     for (it in seq_len(10)) {         
         dense.counts <- matrix(rnorm(ngenes*ncells), ngenes, ncells)
-        out.mult <- writeHDF5Array(dense.counts, fpaths[1], name="yay", chunk_dim=c(100, 100), level=6)
-        out.nmult <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunk_dim=c(109, 97), level=6)
+        out.mult <- writeHDF5Array(dense.counts, fpaths[1], name="yay", chunkdim=c(100, 100), level=6)
+        out.nmult <- writeHDF5Array(dense.counts, fpaths[2], name="yay", chunkdim=c(109, 97), level=6)
 
         hdf5m.col.time[it] <- timeExprs(system(sprintf("./HDF5ChunkTester %s yay 0", fpaths[1])), times=1)
         hdf5m.row.time[it] <- timeExprs(system(sprintf("./HDF5ChunkTester %s yay 1", fpaths[1])), times=1)
