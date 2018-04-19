@@ -90,8 +90,8 @@ As the density increases, column access becomes slower but is still comparable t
 
 As explained above for ordinary matrices, \beachmat{} defaults to copy-on-access to retrieve column data from sparse matrices.
 This is the case regardless of whether \code{get\_col()} or \code{get\_const\_col()} is used, as both must explicitly return the zero entries for representation-agnostic behaviour.
-To improve performance, the \beachmat{} API also provides the \code{get\_const\_col\_indexed()} method to avoid copying in CSC matrices.
-This returns a tuple containing the number of matrix elements stored in the representation, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
+To improve performance, the \beachmat{} API also provides the \code{get\_const\_col\_indexed()} method to avoid copying from CSC matrices.
+This returns a tuple containing the number of matrix elements stored in the requested column, an iterator to an integer vector containing the row indices of these elements, and an iterator to a numeric vector containing the values.
 For CSC matrices, iterators can be directly returned to the internal $i$ and $x$ vectors.
 For other representations, this method calls \code{get\_const\_col()}, which also avoids copying for ordinary matrices while providing representation-agnostic behaviour.
 

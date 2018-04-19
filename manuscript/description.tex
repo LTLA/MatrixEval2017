@@ -303,7 +303,7 @@ Our results indicate that \beachmat{} provides comparable performance to a refer
 
 \beachmat{} also supports data access from sparse matrices in the compressed sparse column-orientated (CSC) format (\suppsecsparseschem{}, \suppfigsparseschem{}), implemented in the \texttt{dgCMatrix} class from \textit{Matrix}.
 This representation only stores non-zero values in RAM, which is highly memory-efficient for assays that yield many zeroes, e.g., scRNA-seq.
-When the density of non-zero entries is low, column access from CSC matrices may also be faster than the equivalent ordinary matrix (\suppsecsparsecol{}, \suppfigsparsecol{}).
+When the density of non-zero entries is low, column access from CSC matrices can also be faster than the equivalent ordinary matrix (\suppsecsparsecol{}, \suppfigsparsecol{}).
 However, row access from CSC matrices is more complex, as obtaining elements from an arbitrary row of the matrix involves a binary search for each column (\suppsecsparserow{}).
 We use a novel caching strategy to improve the efficiency of accessing data from consecutive rows by avoiding unnecessary binary searches (Fig~\ref{fig:sparse}).
 This provides a 4-fold increase in speed compared to a naive approach, as well as faster row-level access than the \textit{RcppArmadillo} and \textit{RcppEigen} APIs \cite{eddelbuettel2014arma,bates2013fast}.
@@ -533,7 +533,7 @@ The last element of \texttt{p} is always the total number of non-zero entries.
 
 \noindent
 \textbf{S3 Fig. Time required to access consecutive columns of simulated CSC matrices using \beachmat{} or the \textit{RcppArmadillo} and \textit{RcppEigen} APIs, compared to an equivalent ordinary matrix with \beachmat{}.}
-Timings were also recorded for a copy-free column access method in \beachmat{}.
+Timings were also recorded for a copy-free column access method for CSC matrices in \beachmat{}.
 (a) Access times with respect to the density of non-zero entries as a percentage of all entries, for a matrix with 10000 rows and 1000 columns.
 (b) Access times with respect to the number of columns, for a matrix with 10000 rows and 1\% density.
 Each timing represents the average of 10 simulations, and involves accessing all columns in the matrix.
@@ -544,8 +544,8 @@ Horizontal dotted lines represent 2-fold increases in time.
 \textbf{S4 Fig. Time required to access non-consecutive rows of simulated CSC matrices using the caching method in \beachmat{} or a naive binary search implemented in \textit{Rcpp}, compared to an equivalent ordinary matrix with \beachmat{}.}
 (a) Access times for ordered but non-consecutive rows, with respect to the number of rows in a matrix with 10000 rows and 1000 columns at 1\% density.
 This involved accessing every 5\textsuperscript{th} row and returning to the first unaccessed row, i.e., $\{1, 6, \ldots, 9996, 2, 7, \ldots\}$.
-(b) Access times for random rows.
-Each timing represents the average of 10 simulations, and involves accessing all rows in the matrix.
+(b) Access times for random rows, with respect to the number of rows in the matrix described previously.
+Each timing represents the average of 10 simulations, and involves accessing all rows in the matrix exactly once.
 Horizontal dotted lines represent 2-fold increases in time.
 \\[0.05in]
 
