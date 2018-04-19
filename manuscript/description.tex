@@ -268,10 +268,10 @@ By operating synergistically with existing Bioconductor infrastructure, \beachma
 
 \subsection*{Overview}
 The \beachmat{} API uses C++ classes to provide a common interface for data access from R matrix representations.
-We define a base class that implements common methods for all representations of a given data type (e.g., integer, double-precision, character strings).
-Each specific representation is associated with a derived C++ class that provides customized implementations of the access methods.
+For all representations of a given data type (e.g., integer, double-precision, character strings), we define a base class with common methods for data access.
+Each specific representation is associated with a derived class that provides customized implementations of the access methods.
 The intention is for a user to pass in an R matrix of any type, in the form of an \code{RObject} instance from the \textit{Rcpp} API (Fig~\ref{fig:beachoverview}).
-\beachmat{} then produces a corresponding C++ object, returning a pointer to the base class.
+\beachmat{} then constructs an instance of the appropriate derived class, returning a pointer to the base class.
 This pointer is the same regardless of the representation and can be used in downstream C++ code to achieve run-time polymorphism.
 
 \begin{figure}[b]
@@ -284,8 +284,7 @@ This pointer is the same regardless of the representation and can be used in dow
     \label{fig:beachoverview}
 \end{figure}
 
-Access to matrix data is achieved with common methods in the base class that have specialized implementations in each derived class. 
-When access to a specific row or column (or a part thereof) is requested, the \beachmat{} API will fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
+When access to a specific row or column (or a part thereof) is requested, the \beachmat{} API will use representation-specific methods to fill a \textit{Rcpp}-style \code{Vector} object with corresponding data values from the matrix.
 This copy-on-access strategy ensures that the API behaves consistently across different matrix representations, and provides flexibility for downstream applications by allowing in-place modifications to vector elements and guaranteeing contiguous data storage. 
 It is also possible to avoid copying altogether when performing read-only data access from columns of ordinary or sparse matrices, improving efficiency in certain situations.
 Finally, a request for a specific entry of the matrix will directly return the corresponding data value.
