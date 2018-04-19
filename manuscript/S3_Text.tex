@@ -26,7 +26,7 @@ Consider an existing file with chunk dimensions of $(p_1, q_1)$.
 Assume that we want to obtain a new file with chunk dimensions of $(1, q_2)$, i.e., row-wise chunks containing $q_2$ values.
 We extract a submatrix of size $(p_1, q_2)$ from the existing file and write it to the new file with the row-chunked layout.
 This is repeated with the next submatrix of the same size along the next $q_2$ columns, and the process is iterated until all columns have been read and written for these $p_1$ rows.
-In cases where $q_2$ is not a multiple of $q_1$, we configure the HDF5 chunk cache to hold the input chunk that has not been completely read between iterations.)
+(In cases where $q_2$ is not a multiple of $q_1$, we configure the HDF5 chunk cache to hold the input chunk that has not been completely read between iterations.)
 We repeat this procedure with the next $p_1$ rows until the entire file has been processed.
 Conversely, to convert to column-based chunks of size $(p_2, 1)$, a submatrix of size $(p_2, q_1)$ is extracted and written to file; this is repeated for the next $p_2$ rows, until all rows have been processed for these $q_1$ columns; and the process is repeated with the next $q_1$ columns until the entire file is rewritten.
 The idea is to read and write entire chunks as much as possible, reducing the number of redundant reads from file.
