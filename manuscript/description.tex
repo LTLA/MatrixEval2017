@@ -410,8 +410,8 @@ Our custom C++ functions based on \beachmat{} were at least comparable to the bu
 For \code{HDF5Matrix}, a column-chunked layout and a rectangular $200 \times 200$ layout were tested.
 (b) Time required to calculate the row sums for each representation by accessing data from each row.
 For \code{HDF5Matrix}, a row-chunked layout and a rectangular $200 \times 200$ layout were tested.
-Heights represent the average of 10 repeated timings; standard errors were negligible and are not shown.
-(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the relevant built-in methods in R.}
+(c) Time required to compute the library size per cell, the number of cells expressing each gene or the number of genes expressed in each cell, using C++ functions written with \beachmat{} or the relevant built-in methods in R.
+Each value is an average of 10 repeated timings; standard errors were negligible and are not shown.}
     \label{fig:zeisel}
 \end{figure}
 
@@ -438,7 +438,7 @@ This is consistent with composition effects \cite{robinson2010scaling} caused by
         The intensity of colour is proportional to the density of cells at each plot location.
         Dashed lines indicate the score boundaries corresponding to each phase, and the number of assigned cells is also shown for each phase.
         (b) Size factor for each cell from the deconvolution method, plotted against the library size.
-        Cells were coloured according to the deviation from the median log-ratio of the size factor to the library size for all cells.
+        Cells are coloured according to the deviation from the median log-ratio of the size factor to the library size across all cells.
         (c) Variance of the normalized log-expression values for each gene, plotted against the mean log-expression.
         The red line represents the mean-dependent trend fitted to all genes, while the blue line represents the mean-variance trend corresponding to Poisson noise.
         Orange points represent HVGs with variances above the red line, with the top 10 genes highlighted.
@@ -473,7 +473,7 @@ These modifications are now implemented in the latest versions of \textit{scran}
 
 The popularity of the R programming language stems, in part, from the ease with which it can be extended.
 Packages can be easily developed by the research community to implement cutting-edge algorithms for new data types.
-The increasing number of packages designed to analyze scRNA-seq data (13 on Bioconductor at time of writing) provides a case in point.
+The increasing number of packages designed to analyze single-cell data (43 on Bioconductor at time of writing) provides a case in point.
 We anticipate that \beachmat{} will be useful to developers of novel computationally intensive bioinformatics methods that need to access data from different matrices.
 While we have focused on scRNA-seq in this paper, analyses of other large matrices (e.g., genome-wide contact matrices in Hi-C data \cite{lun2016infrastructure}) may also benefit from \beachmat{}-driven code.
 We will also continue to develop \beachmat{} to support data access from new formats such as Loom for scRNA-seq data (\url{http://loompy.org/}).
@@ -491,7 +491,7 @@ All R/C++ code used to perform the simulations and real data analyses are also a
 \section*{Acknowledgements}
 We thank Martin Morgan, Andrew McDavid, Peter Hickey, Raphael Gottardo, Mike Jiang, Vince Carey, Kasper Hansen, John Readey and other members of the Bioconductor single-cell big data working group for useful discussions.
 We thank Davis McCarthy for his assistance with incorporating \beachmat{} into \textit{scater}.
-We also thank John Marioni for helpful comments on the manuscript.
+We also thank John Marioni and Wolfgang Huber for helpful comments on the manuscript.
 
 \bibliography{ref}
 
