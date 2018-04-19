@@ -235,7 +235,7 @@ For each representation, methods are provided in R for common operations such as
 This simplifies software development and improves interoperability.
 
 The major benefit of alternative representations is that they allow efficient handling of large matrices in R without using large amounts of RAM to construct a dense array.
-This is particularly important for the analysis of current and future biological data sets due to increasing experimental throughput.
+This is particularly important for the effective analysis of biological data sets due to the increasing throughput of the experimental protocols.
 It is well known that the output of DNA sequencing machines has risen consistently over the past decade \cite{reuter2015high}, which is compounded by the increasing complexity of the assays.
 For example, droplet-based protocols in single-cell transcriptomics \cite{macosko2015highly,klein2015droplet,zheng2017massively} generate transcriptome-wide expression profiles for each of thousands or even millions of cells.
 Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} yielding genome-wide data (from individual genomic regions or base positions, respectively) for each cell.
@@ -297,7 +297,7 @@ The same methods are available for all classes of each data type, improving thei
 The simplest matrix representation is the ordinary R matrix, where data are stored in RAM as a contiguous dense array in column-major format.
 This is most commonly constructed with the base \texttt{matrix} function, though the \texttt{dgeMatrix} class from the \textit{Matrix} package implements an equivalent representation.
 Both of these classes are supported by \beachmat{}.
-Using simulated data, we measured the speed of row- or column-level data access from ordinary matrices with \beachmat{} (\suppsecsimdesign{}). 
+Using simulated data (\suppsecsimdesign{}), we measured the speed of row- or column-level data access from ordinary matrices with \beachmat{}.
 Our results indicate that \beachmat{} provides comparable performance to a reference \textit{Rcpp} implementation 
 (\suppsecsimple{}, \suppfigsimpleaccess{}). 
 
