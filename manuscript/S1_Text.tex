@@ -197,7 +197,7 @@ For comparison, timings were also obtained for the \code{\%*\%} operator in R (f
 from the \textit{Matrix} package, for sparse matrices;
 or from the \textit{DelayedArray} package, for HDF5-backed matrices).
 We observed that the performance of our implementation for ordinary and HDF5-backed matrices was comparable to the representation-specific \code{\%*\%} operators,
-despite our use of a naive algorithm that was not cache optimized.
+despite our use of a naive algorithm that was not cache-optimized.
 For sparse matrices, a different algorithm that exploits sparsity in both left- and right-side matrices was even faster than \code{\%*\%} from \textit{Matrix}.
 
 \bibliography{ref}
