@@ -235,11 +235,11 @@ For each representation, methods are provided in R for common operations such as
 This simplifies software development and improves interoperability.
 
 The major benefit of alternative representations is that they allow efficient handling of large matrices in R without using large amounts of RAM to construct a dense array.
-This is particularly important for the analysis of current biological data sets due to increasing experimental throughput.
+This is particularly important for the analysis of current and future biological data sets due to increasing experimental throughput.
 It is well known that the output of DNA sequencing machines has risen consistently over the past decade \cite{reuter2015high}, which is compounded by the increasing complexity of the assays.
-For example, droplet-based protocols in single-cell transcriptomics \cite{macosko2015highly,klein2015droplet,zheng2017massively} allow generation of transcriptome-wide expression profiles for each of thousands or even millions of cells.
-Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} yielding data for individual genomic regions or base positions, respectively.
-Analyses of these large data sets often involve a considerable amount of interactive data exploration where the matrix might be transformed, subsetted or rearranged.
+For example, droplet-based protocols in single-cell transcriptomics \cite{macosko2015highly,klein2015droplet,zheng2017massively} generate transcriptome-wide expression profiles for each of thousands or even millions of cells.
+Similar issues are encountered outside of transcriptomics, with single-cell ATAC-seq \cite{buenrostro2015single} and bisulfite sequencing \cite{smallwood2014single} yielding genome-wide data (from individual genomic regions or base positions, respectively) for each cell.
+Analyses of these large data sets often involve an extended period of interactive data exploration where the matrix might be transformed, subsetted or rearranged.
 Given R's copy-on-write semantics, matrix representations that achieve efficient memory usage throughout the course of an analysis are highly desirable.
 
 Unfortunately, the use of alternative matrix representations is less straightforward for compiled code written in statically typed languages like C++.
