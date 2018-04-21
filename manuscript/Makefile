@@ -4,30 +4,30 @@ all: main.pdf \
 	S1_Text.pdf S2_Text.pdf S3_Text.pdf S4_Text.pdf
 
 Figure1.eps: pics/overview.svg
-	inkscape -D -E $@ $<
+	inkscape -D -E $@ -T $<
 
 Figure2.eps: pics/figure_sparse_times.tex ../simulations/timings/pics/sparse_row_density.pdf ../simulations/timings/pics/sparse_row_nrow.pdf
 	cd pics; pdflatex `basename $<`
 	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
-	pdftops -eps tmp.pdf $@
+	gs -o $@ -dNoOutputFonts -sDEVICE=eps2write tmp.pdf
 	rm tmp.pdf
 
 Figure3.eps: pics/figure_hdf5_times.tex ../simulations/timings/pics/HDF5_col_layout.pdf ../simulations/timings/pics/HDF5_row_layout.pdf
 	cd pics; pdflatex `basename $<`
 	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
-	pdftops -eps tmp.pdf $@
+	gs -o $@ -dNoOutputFonts -sDEVICE=eps2write tmp.pdf
 	rm tmp.pdf
 
 Figure4.eps: pics/figure_zeisel.tex ../real/zeisel/pics/zeisel_col.pdf ../real/zeisel/pics/zeisel_row.pdf ../real/zeisel/pics/zeisel_detection.pdf
 	cd pics; pdflatex `basename $<`
 	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
-	pdftops -eps tmp.pdf $@
+	gs -o $@ -dNoOutputFonts -sDEVICE=eps2write tmp.pdf
 	rm tmp.pdf
 
 Figure5.eps: pics/figure_10x.tex ../real/10X/pics/cycle.pdf ../real/10X/pics/sizefacs.pdf ../real/10X/pics/hvg.pdf ../real/10X/pics/pca.pdf
 	cd pics; pdflatex `basename $<`
 	pdfcrop `echo $< | sed "s/tex/pdf/"` tmp.pdf
-	pdftops -eps tmp.pdf $@
+	gs -o $@ -dNoOutputFonts -sDEVICE=eps2write tmp.pdf
 	rm tmp.pdf
 
 S1_Fig.pdf: pics/supp_simple.tex
