@@ -1,6 +1,7 @@
 # Evaluating the performance of different matrix types
 
-This repository contains code for the manuscript **beachmat: a Bioconductor C++ API for accessing high-throughput biological data from a variety of R matrix types** by Lun _et al._, currently on biorXiv (https://doi.org/10.1101/167445).
+This repository contains code for the manuscript **beachmat: a Bioconductor C++ API for accessing high-throughput biological data from a variety of R matrix types** by Lun _et al._, 
+published in _PLoS Computational Biology_ in 2018 (https://doi.org/10.1371/journal.pcbi.1006135).
 
 The provided code will check the performance of different matrix types for row/column access, using simulated and real data sets.
 To run the tests on your machine, please read the following instructions.
