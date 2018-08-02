@@ -27,6 +27,8 @@ SEXP get_numeric_eigen_margins(SEXP, SEXP);
 
 SEXP edit_numeric_matrix(SEXP);
 
+SEXP edit_numeric_vector(SEXP);
+
 SEXP edit_numeric_arma_matrix(SEXP);
 
 SEXP standard_matrix_multiplication(SEXP, SEXP);

@@ -21,6 +21,7 @@ static const R_CallMethodDef all_call_entries[] = {
     REGISTER(get_numeric_sparse_row_margins_random, 2),
 
     REGISTER(edit_numeric_matrix, 1),
+    REGISTER(edit_numeric_vector, 1),
     REGISTER(edit_numeric_arma_matrix, 1),
 
     REGISTER(standard_matrix_multiplication, 2),
