@@ -15,7 +15,7 @@ overwrite <- TRUE
 fpaths <- file.path(tmp.dir, c("mult.h5", "nonmult.h5"))
 
 for (redchunk in 0:1) {
-    system(sprintf("g++ -DDECACHE=%i -std=c++11 -I%s -o HDF5ChunkTester tester.cpp %s -lz -ldl", 
+    system(sprintf("g++ -DDECACHE=%i -std=c++11 -I%s -o HDF5ChunkTester cache_test.cpp %s -lz -ldl", 
            redchunk,
            system.file("include", package="Rhdf5lib"), 
            capture.output(Rhdf5lib::pkgconfig())))

@@ -7,7 +7,7 @@
 #define DECACHE 0
 #endif
 
-// g++  -std=c++11 tester.cpp -lhdf5_cpp -lhdf5 -o HDF5ChunkTester
+// See optim_cache.R for compilation instructions.
 
 int main (int argc, const char** argv) {
     if (argc!=4) {

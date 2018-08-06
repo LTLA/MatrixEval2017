@@ -11,7 +11,7 @@
      system.file(package="Rhdf5lib", "include"),
      capture.output(Rhdf5lib::pkgconfig())))
 
- * Then, assuming 'check.R' has already been run, we can test speed with:
+ * Then, assuming 'beach_check.R' has already been run, we can test speed with:
 
  system.time(system("./HDF5AccessTester bycol.h5 yyy 0"))
  system.time(system("./HDF5AccessTester bycol.h5 yyy 1"))
