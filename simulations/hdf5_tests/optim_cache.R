@@ -51,8 +51,9 @@ for (redchunk in 0:1) {
 # runs after replacing the nslots with the number of chunks per column.
 # This shouldn't affect column access but row access should be totally broken.
 
+overwrite <- TRUE
 for (redchunk in 0:1) {
-    system(sprintf("g++ %s -std=c++11 -I%s -o HDF5ChunkTester tester.cpp %s -lz -ldl", 
+    system(sprintf("g++ %s -std=c++11 -I%s -o HDF5ChunkTester cache_test.cpp %s -lz -ldl", 
            ifelse(redchunk==0, "", "-DBADSLOT"),
            system.file("include", package="Rhdf5lib"), 
            capture.output(Rhdf5lib::pkgconfig())))

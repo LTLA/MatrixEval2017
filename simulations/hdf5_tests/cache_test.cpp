@@ -27,16 +27,6 @@ int main (int argc, const char** argv) {
     const size_t total_nrows=dims_out[1];
     const size_t total_ncols=dims_out[0];
 
-    hsize_t h5_start[2], col_count[2], row_count[2];
-    h5_start[0]=0;
-    h5_start[1]=0;
-    col_count[0]=1;
-    col_count[1]=total_nrows;
-    row_count[0]=total_ncols;
-    row_count[1]=1;
-
-    const H5::DataType default_type=hdata.getDataType();
-
     // Resetting chunk cache parameters.
     H5::DSetCreatPropList cparms = hdata.getCreatePlist();
 
@@ -64,7 +54,7 @@ int main (int argc, const char** argv) {
     /* Computing the size of the cache required to store all chunks in each row or column.
      * The approach used below avoids overflow from computing eachchunk*num_Xchunks.
      */
-    const size_t eachchunk=default_type.getSize() * chunk_nrows * chunk_ncols;
+    const size_t eachchunk=hdata.getDataType().getSize() * chunk_nrows * chunk_ncols;
     const size_t eachrow=std::max<size_t>(0, eachchunk * num_chunks_per_row - DECACHE); 
     const size_t eachcol=std::max<size_t>(0, eachchunk * num_chunks_per_col - DECACHE);
 #ifdef VERBOSE    
@@ -75,7 +65,7 @@ int main (int argc, const char** argv) {
     // The first argument is ignored, according to https://support.hdfgroup.org/HDF5/doc/RM/RM_H5P.html.
     // Setting w0 to 0 to evict the last used chunk; no need to worry about full vs partial reads here.
     H5::FileAccPropList fapl(H5::FileAccPropList::DEFAULT.getId());
-    fapl.setCache(0, nslots, (userow ? eachrow : eachcol), 0);
+    fapl.setCache(0, nslots, (userow ? eachrow : eachcol), 1);
 
     // Reopening the file with a new HDF5 cache.
     hfile.close();
@@ -95,25 +85,34 @@ int main (int argc, const char** argv) {
 #endif    
 
     double total=0;
-    H5::DataSpace outspace;
-    std::vector<double> storage(total_nrows);
+    hsize_t h5_start[2], col_count[2], row_count[2];
+    h5_start[0]=0;
+    h5_start[1]=0;
+    col_count[0]=1;
+    col_count[1]=total_nrows;
+    row_count[0]=total_ncols;
+    row_count[1]=1;
 
     if (!userow) { 
+        std::vector<double> storage(total_nrows);
+        H5::DataSpace outspace(1, col_count+1);
+        outspace.selectAll();
+
         for (size_t c=0; c<total_ncols; ++c) {
-            outspace.setExtentSimple(1, col_count+1);
-            outspace.selectAll();
             h5_start[0] = c;
             hspace.selectHyperslab(H5S_SELECT_SET, col_count, h5_start);
-            hdata.read(storage.data(), default_type, outspace, hspace);
+            hdata.read(storage.data(), H5::PredType::NATIVE_DOUBLE, outspace, hspace);
             total += std::accumulate(storage.begin(), storage.end(), 0.0);
         }
     } else {
+        std::vector<double> storage(total_ncols);
+        H5::DataSpace outspace(1, row_count);
+        outspace.selectAll();
+
         for (size_t r=0; r<total_nrows; ++r) {
-            outspace.setExtentSimple(1, row_count);
-            outspace.selectAll();
             h5_start[1] = r;
             hspace.selectHyperslab(H5S_SELECT_SET, row_count, h5_start);
-            hdata.read(storage.data(), default_type, outspace, hspace);
+            hdata.read(storage.data(), H5::PredType::NATIVE_DOUBLE, outspace, hspace);
             total += std::accumulate(storage.begin(), storage.end(), 0.0);
         }
     }
