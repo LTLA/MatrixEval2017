@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 
-#define MULT 5
+#define MULT 10
 
 /* To compile with the Rhdf5lib libraries, open R and run:
 
@@ -62,11 +62,18 @@ int main (int argc, const char** argv) {
 
     // Let's say we want to extract every 10th column, either via one "read()" call or multiple.
     if (one_call) { 
+        std::cout << "Single read" << std::endl;
         hsize_t output_dims[2];
-        output_dims[0]=total_nrows;
-        output_dims[1]=N;
+        output_dims[0]=N;
+        output_dims[1]=total_nrows;
         H5::DataSpace outspace(2, output_dims);
         outspace.selectAll();
+
+//        hsize_t stride[2];
+//        stride[0]=MULT;
+//        stride[1]=1;
+//        col_count[0]=N;
+//        hspace.selectHyperslab(H5S_SELECT_SET, col_count, h5_start, stride);
 
         hspace.selectNone();
         for (size_t c=0; c<N; ++c) {
@@ -78,6 +85,7 @@ int main (int argc, const char** argv) {
         hdata.read(storage.data(), H5::PredType::NATIVE_DOUBLE, outspace, hspace);
         total = std::accumulate(storage.begin(), storage.end(), 0.0);
     } else {
+        std::cout << "Multiple reads" << std::endl;
         H5::DataSpace outspace(1, col_count+1);
         outspace.selectAll();
         std::vector<double> storage(total_nrows);
